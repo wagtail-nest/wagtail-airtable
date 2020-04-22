@@ -1,0 +1,23 @@
+{% extends "wagtailadmin/base.html" %}
+{% block titletag %}Import Airtable Sheets{% endblock %}
+{% block content %}
+  {% include "wagtailadmin/shared/header.html" with title="Airtable Import" %}
+
+  <div class="nice-padding">
+    <h2>Models you can import from Airtable</h2>
+    {% for model_name, model_path, model in models %}
+      <h3>{{ model_name }}</h3>
+      {{ model }}
+      {% if model.is_airtable_enabled %}
+        <a href="{% url 'airtable_import_listing' %}?import={{ model_path }}">
+          <button class="button button-longrunning" data-clicked-text="Importing...">
+            <span class="icon icon-spinner"></span>
+            <em>Import {{ model_name }} Information</em>
+          </button>
+        </a>
+      {% else %}
+        <em>{{ model_name }} is not setup with the correct Airtable settings</em>
+      {% endif %}
+    {% endfor %}
+  </div>
+{% endblock %}
