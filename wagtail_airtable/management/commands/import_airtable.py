@@ -64,17 +64,19 @@ class Command(BaseCommand):
                from Airtable records as there's missing data such as depth and parent
                pages. And so Wagtail pages are skipped entirely in step 3.
         """
-        # TODO Move the AIRTABLE_DEBUG logic to a diff file.
-        # If Airtable debug is enabled and this function is called print() statements will appear in your terminal.
-        # CAUTION: Do NOT run this in production
-        AIRTABLE_DEBUG = False
+        # Overwrite verbosity if WAGTAIL_AIRTABLE_DEBUG is enabled.
         if settings.DEBUG:
             # AIRTABLE_DEBUG can only be enabled if standard Django DEBUG is enabled.
             # The idea is to protect logs and output in production from the noise of these imports.
             AIRTABLE_DEBUG = getattr(settings, 'WAGTAIL_AIRTABLE_DEBUG', False)
+            if AIRTABLE_DEBUG:
+                options['verbosity'] = 2
 
         def debug_message(message):
-            if AIRTABLE_DEBUG:
+            """
+            Local function. Print debug messages if `verbosity` is 2 or higher.
+            """
+            if options['verbosity'] >= 2:
                 print(message)
 
         models = []
@@ -202,16 +204,17 @@ class Command(BaseCommand):
                 # This will return 'your-model' and can now be searched for as model.objects.get(slug='your-model')
                 unique_identifier = record_fields.get(airtable_unique_identifier_column_name, None)
                 if unique_identifier:
-                    debug_message(f"\t\t A record based on the unique identifier was found: {unique_identifier}")
+                    debug_message(f"\t\t An Airtable record based on the unique identifier was found: {airtable_unique_identifier_column_name}")
 
                     try:
                         obj = model.objects.get(**{airtable_unique_identifier_field_name: unique_identifier})
-                        debug_message(f"\t\t Unique identifier exists as Airtable Column Name: {airtable_unique_identifier_column_name}")
+                        debug_message(f"\t\t Local object found by Airtable unique column name: {airtable_unique_identifier_column_name}")
                     except model.DoesNotExist:
                         obj = None
+                        debug_message("\t\t No object was found based on the Airtable column name")
+
                     if obj:
                         # A local model object was found by a unique identifier.
-
                         if serialized_data.is_valid():
                             for field_name, value in serialized_data.validated_data.items():
                                 if field_name == "tags":
@@ -228,53 +231,75 @@ class Command(BaseCommand):
                                         # Only save the page if the page is not locked
                                         obj.save()
                                         obj.save_revision()
+                                        updated = updated + 1
                                     else:
                                         # TODO Add a handler to manage locked pages.
-                                        pass
+                                        debug_message("\t\t\t Page IS locked. Skipping Page save.")
+                                        skipped = skipped + 1
                                 else:
                                     # Django model. Save normally.
                                     obj.save()
+                                    debug_message("\t\t\t Saved!")
                                 updated = updated + 1
                             except ValidationError as error:
                                 error_message = '; '.join(error.messages)
                                 logger.error(f"Unable to save {obj}. Error(s): {error_message}")
+                                debug_message(f"\t\t Unable to save {obj} (ID: {obj.pk}; Airtable Record ID: {record_id}). Reason: {error_message}")
+                                skipped = skipped + 1
                         else:
                             logger.info(f"Invalid data for record {record_id}")
+                            debug_message(f"\t\t Serializer data was invalid.")
                             skipped = skipped + 1
                         continue
                     else:
                         # No object was found by this unique ID.
                         # Do nothing. The next step will be to create this object in Django
                         logger.info(f"{model._meta.verbose_name} with field {airtable_unique_identifier_field_name}={unique_identifier} was not found")
+                        debug_message(f"\t\t {model._meta.verbose_name} with field {airtable_unique_identifier_field_name}={unique_identifier} was not found")
+                        skipped = skipped + 1
                 else:
                     # There was no unique identifier set for this model.
                     # Nothing can be done about that right now.
                     logger.info(f"{model._meta.verbose_name} does not have a unique identifier")
+                    debug_message(f"\t\t {model._meta.verbose_name} does not have a unique identifier")
+                    skipped = skipped + 1
 
                 # Cannot bulk-create Wagtail pages from Airtable because we don't know where the pages
                 # Are supposed to live, what their tree depth should be, and a few other factors.
                 # For this scenario, log information and skip the loop iteration.
                 if hasattr(model, 'depth'):
                     logger.info(f"{model._meta.verbose_name} cannot be created from an import.")
+                    debug_message(f"\t\t {model._meta.verbose_name} is a Wagtail Page and cannot be created from an import.")
                     skipped = skipped + 1
                     continue
 
                 # If there is no match whatsoever, try to create a new `model` instance.
                 # Note: this may fail if there isn't enough data in the Airtable record.
                 try:
+                    debug_message(f"\t\t Attempting to create a new object...")
                     model.objects.create(**mapped_import_fields)
+                    debug_message(f"\t\t Object created")
                     created = created + 1
                 except ValueError as value_error:
                     logger.info(f"Could not create new model. Error: {value_error}")
+                    debug_message(f"\t\t Could not create new model. Error: {value_error}")
+                    skipped = skipped + 1
                 except IntegrityError as e:
                     logger.info(f"Could not create new model. Error: {e}")
+                    debug_message(f"\t\t Could not create new model. Error: {e}")
+                    skipped = skipped + 1
                 except AttributeError as e:
                     logger.info(f"Could not create new model. AttributeError. Error: {e}")
+                    debug_message(f"\t\t Could not create new model. AttributeError. Error: {e}")
+                    skipped = skipped + 1
                 except Exception as e:
                     logger.error(f"Unhandled error. Could not create a new object for {model._meta.verbose_name}. Error: {e}")
+                    debug_message(f"\t\t Unhandled error. Could not create a new object for {model._meta.verbose_name}. Error: {e}")
+                    skipped = skipped + 1
 
         if options['verbosity'] >= 1:
             self.stdout.write(f"{created} objects created. {updated} objects updated. {skipped} objects skipped.")
-            return f"{created} objects created. {updated} objects updated. {skipped} objects skipped."
+
+        return f"{created} objects created. {updated} objects updated. {skipped} objects skipped."
 
 
