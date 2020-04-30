@@ -64,6 +64,19 @@ class Command(BaseCommand):
                from Airtable records as there's missing data such as depth and parent
                pages. And so Wagtail pages are skipped entirely in step 3.
         """
+        # TODO Move the AIRTABLE_DEBUG logic to a diff file.
+        # If Airtable debug is enabled and this function is called print() statements will appear in your terminal.
+        # CAUTION: Do NOT run this in production
+        AIRTABLE_DEBUG = False
+        if settings.DEBUG:
+            # AIRTABLE_DEBUG can only be enabled if standard Django DEBUG is enabled.
+            # The idea is to protect logs and output in production from the noise of these imports.
+            AIRTABLE_DEBUG = getattr(settings, 'WAGTAIL_AIRTABLE_DEBUG', False)
+
+        def debug_message(message):
+            if AIRTABLE_DEBUG:
+                print(message)
+
         models = []
         for label in options['labels']:
             label = label.lower()
@@ -75,10 +88,13 @@ class Command(BaseCommand):
                     raise CommandError("%r is not recognised as a model name." % label)
 
                 models.append(model)
+
+        debug_message(f"Validated models: {models}")
         created = 0
         updated = 0
         skipped = 0
         for model in models:
+            debug_message(f"IMPORTING MODEL: {model}")
             # Wagtail models require a .save_revision() call when being saved.
             is_wagtail_model = hasattr(model, 'depth')
             # Airtable global settings.
@@ -109,9 +125,16 @@ class Command(BaseCommand):
             # Get all the airtable records for the specified table.
             # TODO try/catch this in case of misconfiguration.
             all_records = airtable.get_all()
+            debug_message(f"\t Airtable base key: {airtable_settings.get('AIRTABLE_BASE_KEY')}")
+            debug_message(f"\t Airtable table name: {airtable_settings.get('AIRTABLE_TABLE_NAME')}")
+            debug_message(f"\t Airtable unique identifier settings:")
+            debug_message(f"\t\t Airtable column: {airtable_unique_identifier_column_name}")
+            debug_message(f"\t\t Django field name: {airtable_unique_identifier_field_name}")
+            debug_message(f"\t Airtable records: {len(all_records)}")
 
             # Loop through every record in the Airtable.
             for record in all_records:
+                debug_message("") # Empty space for nicer debug statement separation
                 record_id = record['id']
                 record_fields = record['fields']
                 mapped_import_fields = model.map_import_fields(incoming_dict_fields=record_fields)
@@ -120,53 +143,70 @@ class Command(BaseCommand):
 
                 # Look for a record by it's airtable_record_id.
                 # If it exists, update the data.
+                debug_message(f"\t Looking for existing object with record: {record_id}")
                 try:
                     obj = model.objects.get(airtable_record_id=record_id)
+                    debug_message(f"\t\t Local object found {obj}")
                 except model.DoesNotExist:
                     obj = None
+                    debug_message("\t\t Local object was NOT found")
 
                 if obj:
                     # Model object was found by it's airtable_record_id
                     if serialized_data.is_valid():
+                        debug_message("\t\t Serializer data was valid. Setting attrs on model...")
                         for field_name, value in serialized_data.validated_data.items():
                             if field_name == "tags":
                                 for tag in value:
                                     obj.tags.add(tag)
                             else:
                                 setattr(obj, field_name, value)
+                        # When an object is saved it should NOT push its newly saved data back to Airtable.
+                        # This could theoretically cause a loop
                         obj.push_to_airtable = False
                         try:
                             if is_wagtail_model:
+                                debug_message("\t\t This is a Wagtail Page model")
                                 # Wagtail page. Requires a .save_revision()
                                 if not obj.locked:
+                                    debug_message("\t\t\t Page is not locked. Saving page and creating a new revision.")
                                     # Only save the page if the page is not locked
                                     obj.save()
                                     obj.save_revision()
                                     updated = updated + 1
                                 else:
                                     # TODO Add a handler to manage locked pages.
-                                    pass
+                                    debug_message("\t\t\t Page IS locked. Skipping Page save.")
+                                    skipped = skipped + 1
                             else:
                                 # Django model. Save normally.
+                                debug_message("\t\t Saving Django model")
                                 obj.save()
                                 updated = updated + 1
                         except ValidationError as error:
+                            skipped = skipped + 1
                             error_message = '; '.join(error.messages)
                             logger.error(f"Unable to save {obj._meta.label} -> '{obj}'. Error(s): {error_message}")
+                            debug_message(f"\t\t Could not save Wagtail/Django model. Error: {error_message}")
                         continue
                     else:
                         logger.info(f"Invalid data for record {record_id}")
+                        debug_message(f"\t\t Serializer was invalid for record: {record_id}, model id: {obj.pk}")
+                        debug_message(f"\t\t Continuing to look for object by its unique identifier: {airtable_unique_identifier_column_name}...")
 
                 # This `unique_identifier` is the value of an Airtable record.
                 # ie.
                 #   fields = {
-                #         'Slug': 'the-ascent'
+                #         'Slug': 'your-model'
                 #   }
-                # This will return 'the-ascent' and can now be searched for as model.objects.get(slug='the-ascent')
+                # This will return 'your-model' and can now be searched for as model.objects.get(slug='your-model')
                 unique_identifier = record_fields.get(airtable_unique_identifier_column_name, None)
                 if unique_identifier:
+                    debug_message(f"\t\t A record based on the unique identifier was found: {unique_identifier}")
+
                     try:
                         obj = model.objects.get(**{airtable_unique_identifier_field_name: unique_identifier})
+                        debug_message(f"\t\t Unique identifier exists as Airtable Column Name: {airtable_unique_identifier_column_name}")
                     except model.DoesNotExist:
                         obj = None
                     if obj:

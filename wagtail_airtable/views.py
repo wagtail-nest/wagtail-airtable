@@ -65,7 +65,7 @@ class AirtableImportListing(TemplateView):
             if '.' in label:
                 try:
                     model = self._get_model_for_path(label)
-                    validated_models.append((model._meta.verbose_name, label, model))
+                    validated_models.append((model._meta.verbose_name.title(), label, model))
                 except ObjectDoesNotExist:
                     raise CommandError("%r is not recognised as a model name." % label)
 
