@@ -15,7 +15,7 @@ When you want to sync your Airtable data to your Wagtail website, you can go to 
 ##### Behind the scenes...
 This package will attempt to match a model object against row in Airtable using a `record_id`. If a model does not have a record_id value, it will look for a match using the `AIRTABLE_UNIQUE_IDENTIFIER` to try and match a unique value in the Airtable to the unique value in your model. Should that succeed your model object will be "paired" with the row in Airtable. But should the record-search fail, a new row in Airtable will be created when you save your model, or a new model object will attempt to be created when you import a model from Airtable.
 
-> **Note**: Object creation _can_ fail when importing from Airtable. This is expected behaviour as an Airtable might not have all the data it requires. For instance, a Wagtail Page uses Django Tree Beard and if a `path` is not in the model import settings (and a column in Airtable) a page cannot be created.
+> **Note**: Object creation _can_ fail when importing from Airtable. This is expected behaviour as an Airtable might not have all the data a model requires. For instance, a Wagtail Page uses Django Tree Beard and if a `path` is not in the model import settings (and a column in Airtable) a page cannot be created. Or if Airtable doesn't have a column for a required field on a Django Model, it won't be created.
 
 ### Installation & Configuration
 
