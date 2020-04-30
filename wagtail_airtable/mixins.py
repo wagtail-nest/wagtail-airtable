@@ -10,7 +10,7 @@ from django.utils.functional import cached_property
 logger = getLogger(__name__)
 
 
-class AirtableModelMixin(models.Model):
+class AirtableMixin(models.Model):
     """A mixin to update an Airtable when a model object is saved or deleted."""
 
     AIRTABLE_BASE_KEY = None
@@ -35,7 +35,6 @@ class AirtableModelMixin(models.Model):
 
         self._ran_airtable_setup is used to ensure this method is only ever run once.
         """
-
         if not self._ran_airtable_setup:
             self._ran_airtable_setup = True
             # Look for airtable settings. Default to an empty dict.
@@ -66,6 +65,8 @@ class AirtableModelMixin(models.Model):
 
     @property
     def is_airtable_enabled(self):
+        if not self._ran_airtable_setup:
+            self.setup_airtable()
         return self._is_enabled
 
     def get_import_fields(self):
@@ -171,11 +172,6 @@ class AirtableModelMixin(models.Model):
         """
         save = super().save(*args, **kwargs)
         self.setup_airtable()
-
-        # This is a Wagtail page.
-        # TODO evaluate if this is needed
-        # if hasattr(self, 'depth'):
-        #     pass
 
         if self._is_enabled and getattr(settings, "WAGTAIL_AIRTABLE_ENABLED", False) and self.push_to_airtable:
             # Every airtable model needs mapped fields.

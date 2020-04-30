@@ -75,7 +75,6 @@ class Command(BaseCommand):
                     raise CommandError("%r is not recognised as a model name." % label)
 
                 models.append(model)
-
         created = 0
         updated = 0
         skipped = 0
@@ -143,13 +142,14 @@ class Command(BaseCommand):
                                     # Only save the page if the page is not locked
                                     obj.save()
                                     obj.save_revision()
+                                    updated = updated + 1
                                 else:
                                     # TODO Add a handler to manage locked pages.
                                     pass
                             else:
                                 # Django model. Save normally.
                                 obj.save()
-                            updated = updated + 1
+                                updated = updated + 1
                         except ValidationError as error:
                             error_message = '; '.join(error.messages)
                             logger.error(f"Unable to save {obj._meta.label} -> '{obj}'. Error(s): {error_message}")
@@ -200,7 +200,7 @@ class Command(BaseCommand):
                                 logger.error(f"Unable to save {obj}. Error(s): {error_message}")
                         else:
                             logger.info(f"Invalid data for record {record_id}")
-
+                            skipped = skipped + 1
                         continue
                     else:
                         # No object was found by this unique ID.
@@ -225,8 +225,7 @@ class Command(BaseCommand):
                     model.objects.create(**mapped_import_fields)
                     created = created + 1
                 except ValueError as value_error:
-                    error_message = '; '.join(value_error.messages)
-                    logger.info(f"Could not create new model. Error: {error_message}")
+                    logger.info(f"Could not create new model. Error: {value_error}")
                 except IntegrityError as e:
                     logger.info(f"Could not create new model. Error: {e}")
                 except AttributeError as e:
@@ -237,3 +236,5 @@ class Command(BaseCommand):
         if options['verbosity'] >= 1:
             self.stdout.write(f"{created} objects created. {updated} objects updated. {skipped} objects skipped.")
             return f"{created} objects created. {updated} objects updated. {skipped} objects skipped."
+
+
