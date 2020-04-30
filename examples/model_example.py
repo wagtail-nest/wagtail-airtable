@@ -24,15 +24,7 @@ class YourModel(AirtableMixin, models.Model):
             # "Slug" is the column name in Airtable. "slug" (lowercase) is the field name on line 8.
             "Slug": "slug",
         }
-
-        # Create a dictionary of newly mapped key:value pairs based on the `mappings` dict above.
-        # ie. This wil convert "airtable column name" to "django_field_name"
-        # TODO Put this into the airtable package
-        return_dict = {
-            mappings[key]: value for (key, value) in incoming_dict_fields.items() if key in mappings
-        }
-
-        return return_dict
+        return mappings
 
     def get_export_fields(self):
         """

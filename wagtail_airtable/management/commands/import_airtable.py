@@ -130,16 +130,21 @@ class Command(BaseCommand):
             debug_message(f"\t Airtable base key: {airtable_settings.get('AIRTABLE_BASE_KEY')}")
             debug_message(f"\t Airtable table name: {airtable_settings.get('AIRTABLE_TABLE_NAME')}")
             debug_message(f"\t Airtable unique identifier settings:")
+            debug_message(f"\t Airtable records: {len(all_records)}")
             debug_message(f"\t\t Airtable column: {airtable_unique_identifier_column_name}")
             debug_message(f"\t\t Django field name: {airtable_unique_identifier_field_name}")
-            debug_message(f"\t Airtable records: {len(all_records)}")
 
             # Loop through every record in the Airtable.
             for record in all_records:
-                debug_message("") # Empty space for nicer debug statement separation
+                debug_message("")  # Empty space for nicer debug statement separation
                 record_id = record['id']
                 record_fields = record['fields']
                 mapped_import_fields = model.map_import_fields(incoming_dict_fields=record_fields)
+                # Create a dictionary of newly mapped key:value pairs based on the `mappings` dict above.
+                # This wil convert "airtable column name" to "django_field_name"
+                mapped_import_fields = {
+                    mapped_import_fields[key]: value for (key, value) in record_fields.items() if key in mapped_import_fields
+                }
                 serialized_data = model_serializer(data=mapped_import_fields)
                 serialized_data.is_valid()
 
@@ -270,7 +275,6 @@ class Command(BaseCommand):
                 if hasattr(model, 'depth'):
                     logger.info(f"{model._meta.verbose_name} cannot be created from an import.")
                     debug_message(f"\t\t {model._meta.verbose_name} is a Wagtail Page and cannot be created from an import.")
-                    skipped = skipped + 1
                     continue
 
                 # If there is no match whatsoever, try to create a new `model` instance.
@@ -283,19 +287,15 @@ class Command(BaseCommand):
                 except ValueError as value_error:
                     logger.info(f"Could not create new model. Error: {value_error}")
                     debug_message(f"\t\t Could not create new model. Error: {value_error}")
-                    skipped = skipped + 1
                 except IntegrityError as e:
                     logger.info(f"Could not create new model. Error: {e}")
                     debug_message(f"\t\t Could not create new model. Error: {e}")
-                    skipped = skipped + 1
                 except AttributeError as e:
                     logger.info(f"Could not create new model. AttributeError. Error: {e}")
                     debug_message(f"\t\t Could not create new model. AttributeError. Error: {e}")
-                    skipped = skipped + 1
                 except Exception as e:
                     logger.error(f"Unhandled error. Could not create a new object for {model._meta.verbose_name}. Error: {e}")
                     debug_message(f"\t\t Unhandled error. Could not create a new object for {model._meta.verbose_name}. Error: {e}")
-                    skipped = skipped + 1
 
         if options['verbosity'] >= 1:
             self.stdout.write(f"{created} objects created. {updated} objects updated. {skipped} objects skipped.")

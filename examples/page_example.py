@@ -45,15 +45,7 @@ class HomePage(AirtableMixin, Page):
             "Awesomeness Rating": "total_awesomeness",
             "Last Updated": "last_published_at"
         }
-
-        # Create a dictionary of newly mapped key:value pairs based on the `mappings` dict above.
-        # ie. This wil convert "airtable column name" to "django_field_name"
-        # TODO Put this into the airtable package
-        return_dict = {
-            mappings[key]: value for (key, value) in incoming_dict_fields.items() if key in mappings
-        }
-
-        return return_dict
+        return mappings
 
     def get_export_fields(self):
         """
