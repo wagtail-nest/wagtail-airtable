@@ -67,8 +67,10 @@ AIRTABLE_IMPORT_SETTINGS = {
 ### Management Commands
 
 ```bash
-python manage.py import_airtable pages.HomePage creditcards.CreditCard
+python manage.py import_airtable appname.ModelName secondapp.SecondModel
 ```
+
+Optionally you can turn up the verbosity for better debugging with the `--verbosity=2` flag.
 
 ##### import_airtable command
 This command will look for any `appname.ModelName`s you provide it and use the mapping settings to find data in the Airtable. See the "Behind the scenes" section for more details on how importing works.
@@ -78,3 +80,8 @@ This command will look for any `appname.ModelName`s you provide it and use the m
 > **Note:** Careful not to use the production settings as you could overwrite Wagtail or Airtable data.
 
 Because Airtable doesn't provide a testing environment, you'll need to test against a live table. The best way to do this is to copy your live table to a new table (renaming it will help avoid naming confusion), and update your local settings. With this method, you can test to everything safely against a throw-away Airtable. Should something become broken beyond repair, delete the testing table and re-copy the original one.
+
+### Local debugging
+Due to the complexity and fragility of connecting Wagtail and Airtable (because an Airtable column can be almost any value) you may need some help debugging your setup. To turn on higher verbosity output, you can enable the Aritable debug setting `WAGTAIL_AIRTABLE_DEBUG = True`. All this does is increase the default verbosity when running the management command. In a standard Django management command you could run `python manage.py import_airtable appname.ModelName --verbosty=2` however when you import from Airtable using the Wagtail admin import page you won't have access to this verbosity argument. But enabling `WAGTAIL_AIRTABLE_DEBUG` you can manually increase the verbosity.
+
+> **Note**: This only only work while `DEBUG = True` in your settings as to not accidentally flood your production logs.
