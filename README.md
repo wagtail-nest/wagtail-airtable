@@ -27,7 +27,7 @@ This package will attempt to match a model object against row in Airtable using 
     * An `AIRTABLE_UNIQUE_IDENTIFIER`. This can either be a string or a dictionary mapping the Airtable column name to your unique field in your model.
         * ie. `AIRTABLE_UNIQUE_IDENTIFIER: 'slug',` this will match the `slug` field on your model with the `slug` column name in Airtable. Use this option if your model field and your Airtable column name are identical.
         * ie. `AIRTABLE_UNIQUE_IDENTIFIER: {'Airtable Column Name': 'model_field_name'},` this will map the `Airtable Column Name` to a model field called `model_field_name`. Use this option if your Airtable column name and your model field name are different.
-    * An `AIRTABLE_SERIALIZER` that takes a string path to your serializer. This helps map incoming data from Airtable to your model fields. Django Rest Framework is required for this. See the `examples/` directory for serializer examples. TODO: Add `examples/` for setup examples.
+    * An `AIRTABLE_SERIALIZER` that takes a string path to your serializer. This helps map incoming data from Airtable to your model fields. Django Rest Framework is required for this. See the [examples/](examples/) directory for serializer examples.
 * Add the following to your `urls.py`:
     ```python
     from django.urls import path
@@ -44,6 +44,7 @@ This package will attempt to match a model object against row in Airtable using 
 ### Example Base Configuration
 
 ```python
+# your settings.py
 WAGTAIL_AIRTABLE_ENABLED = True
 AIRTABLE_IMPORT_SETTINGS = {
     'appname.ModelName': {
