@@ -5,3 +5,4 @@
 See the following code examples:
 - [x] [Django Model Support](model_example.py)
 - [x] [Wagtail Page Support](page_example.py)
+- [x] [Wagtail Multi-Page Support](multi_page_example.py)

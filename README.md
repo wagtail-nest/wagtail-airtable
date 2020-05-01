@@ -54,16 +54,37 @@ AIRTABLE_IMPORT_SETTINGS = {
         'AIRTABLE_SERIALIZER': 'path.to.your.model.serializer.CustomModelSerializer'
     },
     'appname.OtherModelName': {
-        'AIRTABLE_BASE_KEY': 'app3ds912jFam032S',
+        'AIRTABLE_BASE_KEY': 'app4ds902jFam035S',
         'AIRTABLE_TABLE_NAME': 'Your Airtable Table Name',
         'AIRTABLE_UNIQUE_IDENTIFIER':
             'Page Slug': 'slug', # 'Page Slug' column name in Airtable, 'slug' field name in Wagtail.
         },
         'AIRTABLE_SERIALIZER': 'path.to.your.model.serializer.OtherCustomModelSerializer'
     },
+    'pages.HomePage': {
+        'AIRTABLE_BASE_KEY': 'app2ds123jP23035Z',
+        'AIRTABLE_TABLE_NAME': 'Wagtail Page Tracking Table',
+        'AIRTABLE_UNIQUE_IDENTIFIER':
+            'Wagtail Page ID': 'pk',
+        },
+        'AIRTABLE_SERIALIZER': 'path.to.your.pages.serializer.PageSerializer',
+        # Below is an OPTIONAL setting.
+        # You can specify models that should be treated the same as this one.
+        # In here we're saying pages.BlogPage and pages.ContactPage should
+        # be treated the same as pages.HomePage
+        'EXTRA_SUPPORTED_MODELS': ['pages.BlogPage', 'pages.ContactPage'],
+    },
     # ...
 }
 ```
+
+### Extra Supported Models
+
+You might have a scenario where you want to push Wagtail Page data to a centralized Airtable base. Instead of specifying a new `AIRTABLE_IMPORT_SETTING` dictionary for _every_ page type, even though the import/export settings are going to be the exact same, you can instead specify the `EXTRA_SUPPORTED_MODELS` key with a `list()` of `appname.ModelName` items.
+
+Example: You have HomePage, BlogDetailPage, and MiscPages in your Wagtail app. You can't tell Wagtail-Airtable to use `wagtailcore.Page` because we can't add import/export fields to that model. However, we can add the mapping to a single Wagtail Page, say the HomePage, and then tell Wagtail-Airtable to treat BlogDetailPage and MiscPage the same as HomePage.
+
+> **Note**: You will still need to add the `AirtableMixin` to each of your `Page` Models. See the [examples](examples/) for more details.
 
 ### Management Commands
 
