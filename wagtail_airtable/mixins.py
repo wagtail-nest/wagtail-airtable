@@ -28,25 +28,6 @@ class AirtableMixin(models.Model):
 
     airtable_record_id = models.CharField(max_length=35, db_index=True, blank=True)
 
-    def _find_adjacent_models(self) -> dict:
-        # If a base setting for a specified model or Page is not immediately found in the
-        # settings (ie. settings.AIRTABLE_IMPORT_SETTINGS keys)
-        # we will need to loop through each set of dictionaries, look for `EXTRA_SUPPORTED_MODELS`
-        # and if it exists check to see if the current model is in the `EXTRA_SUPPORTED_MODELS` list
-        for model_path, model_settings in settings.AIRTABLE_IMPORT_SETTINGS.items():
-            # `EXTRA_SUPPORTED_MODELS` is an optional setting and may not exist.
-            if model_settings.get('EXTRA_SUPPORTED_MODELS'):
-                # Always convert `EXTRA_SUPPORTED_MODELS` to a list for iteration.
-                # Then loop through every model in the list and covert it to lowercase
-                # so we can compare the current models label (lowercase) to a list of lowercased models
-                _list_of_models = list(model_settings.get('EXTRA_SUPPORTED_MODELS', []))
-                _extra_supported_models = [_model.lower() for _model in _list_of_models]
-                # Check that self._meta.label_lower is in the list of `EXTRA_SUPPORTED_MODELS`
-                # (all lowercased for proper string matching)
-                if self._meta.label_lower in _extra_supported_models:
-                    return settings.AIRTABLE_IMPORT_SETTINGS[model_path]
-        return {}
-
     def setup_airtable(self) -> None:
         """
         This method is used in place of __init__() as to not check global settings and
@@ -92,6 +73,25 @@ class AirtableMixin(models.Model):
         if not self._ran_airtable_setup:
             self.setup_airtable()
         return self._is_enabled
+
+    def _find_adjacent_models(self) -> dict:
+        # If a base setting for a specified model or Page is not immediately found in the
+        # settings (ie. settings.AIRTABLE_IMPORT_SETTINGS keys)
+        # we will need to loop through each set of dictionaries, look for `EXTRA_SUPPORTED_MODELS`
+        # and if it exists check to see if the current model is in the `EXTRA_SUPPORTED_MODELS` list
+        for model_path, model_settings in settings.AIRTABLE_IMPORT_SETTINGS.items():
+            # `EXTRA_SUPPORTED_MODELS` is an optional setting and may not exist.
+            if model_settings.get('EXTRA_SUPPORTED_MODELS'):
+                # Always convert `EXTRA_SUPPORTED_MODELS` to a list for iteration.
+                # Then loop through every model in the list and covert it to lowercase
+                # so we can compare the current models label (lowercase) to a list of lowercased models
+                _list_of_models = list(model_settings.get('EXTRA_SUPPORTED_MODELS', []))
+                _extra_supported_models = [_model.lower() for _model in _list_of_models]
+                # Check that self._meta.label_lower is in the list of `EXTRA_SUPPORTED_MODELS`
+                # (all lowercased for proper string matching)
+                if self._meta.label_lower in _extra_supported_models:
+                    return settings.AIRTABLE_IMPORT_SETTINGS[model_path]
+        return {}
 
     def get_import_fields(self):
         """
