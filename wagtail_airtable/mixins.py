@@ -150,12 +150,26 @@ class AirtableMixin(models.Model):
 
     def match_record(self) -> str:
         """Look for a record in an Airtable. Search by the AIRTABLE_UNIQUE_IDENTIFIER."""
-        value = getattr(self, self.AIRTABLE_UNIQUE_IDENTIFIER)
-        records = self.client.search(self.AIRTABLE_UNIQUE_IDENTIFIER, value)
-        if len(records) == 1:
-            # Only one record to return.
-            # TODO Handle more than one result from the airtable.seach() method
-            return records[0]["id"]
+
+        if type(self.AIRTABLE_UNIQUE_IDENTIFIER) == dict:
+            keys = list(self.AIRTABLE_UNIQUE_IDENTIFIER.keys())
+            values = list(self.AIRTABLE_UNIQUE_IDENTIFIER.values())
+            airtable_column_name = keys[0]
+            model_field_name = values[0]
+            value = getattr(self, model_field_name)
+            records = self.client.search(airtable_column_name, value)
+            if len(records) == 1:
+                # Only one record to return.
+                # TODO Handle more than one result from the airtable.seach() method
+                return records[0]["id"]
+        else:
+            _airtable_unique_identifier = self.AIRTABLE_UNIQUE_IDENTIFIER
+            value = getattr(self, _airtable_unique_identifier)
+            records = self.client.search(self.AIRTABLE_UNIQUE_IDENTIFIER, value)
+            if len(records) == 1:
+                # Only one record to return.
+                # TODO Handle more than one result from the airtable.seach() method
+                return records[0]["id"]
         return ""
 
     def refresh_mapped_export_fields(self) -> None:

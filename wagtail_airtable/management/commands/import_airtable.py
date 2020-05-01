@@ -92,6 +92,7 @@ class Command(BaseCommand):
                 models.append(model)
 
         debug_message(f"Validated models: {models}")
+
         created = 0
         updated = 0
         skipped = 0
@@ -117,7 +118,7 @@ class Command(BaseCommand):
                     list(airtable_unique_identifier.items())[0]
                 )
 
-            # Set the Airtable API client.
+            # Set the Airtable API client on a per-model basis
             airtable = Airtable(
                 airtable_settings.get('AIRTABLE_BASE_KEY'),
                 airtable_settings.get('AIRTABLE_TABLE_NAME'),
