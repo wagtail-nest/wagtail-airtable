@@ -28,16 +28,6 @@ This package will attempt to match a model object against row in Airtable using 
         * ie. `AIRTABLE_UNIQUE_IDENTIFIER: 'slug',` this will match the `slug` field on your model with the `slug` column name in Airtable. Use this option if your model field and your Airtable column name are identical.
         * ie. `AIRTABLE_UNIQUE_IDENTIFIER: {'Airtable Column Name': 'model_field_name'},` this will map the `Airtable Column Name` to a model field called `model_field_name`. Use this option if your Airtable column name and your model field name are different.
     * An `AIRTABLE_SERIALIZER` that takes a string path to your serializer. This helps map incoming data from Airtable to your model fields. Django Rest Framework is required for this. See the [examples/](examples/) directory for serializer examples.
-* Add the following to your `urls.py`:
-    ```python
-    from django.urls import path
-    from wagtail_airtable.views import AirtableImportListing
-    ...
-    urlpatterns = [
-        ...
-        path("airtable-import", AirtableImportListing.as_view(), name="airtable_import_listing"),
-    ]
-    ```
 
 * Lastly make sure you enable wagtail-airtable with `WAGTAIL_AIRTABLE_ENABLED = True`. By default this is disabled so data in your Wagtail site and your Airtable sheets aren't accidentally overwritten. Data is hard to recover, this option helps prevent accidental data loss.
 
