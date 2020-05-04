@@ -73,6 +73,13 @@ AIRTABLE_IMPORT_SETTINGS = {
         # In here we're saying pages.BlogPage and pages.ContactPage should
         # be treated the same as pages.HomePage
         'EXTRA_SUPPORTED_MODELS': ['pages.BlogPage', 'pages.ContactPage'],
+        # Below is an OPTIONAL setting.
+        # By disabling `AIRTABLE_IMPORT_ALLOWED` you can prevent Airtable imports
+        # Use cases may be:
+        #   - disabling page imports since they are difficult to setup and maintain,
+        #   - one-way sync to Airtable only (ie. when a model/Page is saved)
+        # Default is True
+        'AIRTABLE_IMPORT_ALLOWED': False,
     },
     # ...
 }

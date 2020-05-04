@@ -101,10 +101,12 @@ class Command(BaseCommand):
             is_wagtail_model = hasattr(model, 'depth')
             # Airtable global settings.
             airtable_settings = settings.AIRTABLE_IMPORT_SETTINGS.get(model._meta.label, {})
+            # If data should never be imported from Airtable, skip this import iteration.
+            if not airtable_settings.get("AIRTABLE_IMPORT_ALLOWED", True):
+                continue
             # Set the unique identifier and serializer.
             airtable_unique_identifier = airtable_settings.get('AIRTABLE_UNIQUE_IDENTIFIER')
             model_serializer = self.get_model_serializer(airtable_settings.get('AIRTABLE_SERIALIZER'))
-
             if type(airtable_unique_identifier) == str:
                 # The unique identifier is a string.
                 # Use it as the Airtable Column name and the Django field name

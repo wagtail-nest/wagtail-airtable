@@ -61,13 +61,14 @@ class AirtableImportListing(TemplateView):
         validated_models = []
 
         for label, model_settings in airtable_settings.items():
-            label = label.lower()
-            if '.' in label:
-                try:
-                    model = self._get_model_for_path(label)
-                    validated_models.append((model._meta.verbose_name.title(), label, model))
-                except ObjectDoesNotExist:
-                    raise CommandError("%r is not recognised as a model name." % label)
+            if model_settings.get("AIRTABLE_IMPORT_ALLOWED", True):
+                label = label.lower()
+                if '.' in label:
+                    try:
+                        model = self._get_model_for_path(label)
+                        validated_models.append((model._meta.verbose_name.title(), label, model))
+                    except ObjectDoesNotExist:
+                        raise CommandError("%r is not recognised as a model name." % label)
 
         return validated_models
 
