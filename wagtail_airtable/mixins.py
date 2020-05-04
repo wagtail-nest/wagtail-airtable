@@ -4,6 +4,7 @@ from logging import getLogger
 from airtable import Airtable
 from django.conf import settings
 from django.db import models
+from requests import HTTPError
 
 from django.utils.functional import cached_property
 
@@ -189,10 +190,17 @@ class AirtableMixin(models.Model):
             airtable_column_name = self.AIRTABLE_UNIQUE_IDENTIFIER
 
         records = self.client.search(airtable_column_name, value)
-        if len(records) == 1:
-            # Only one record to return.
-            # TODO Handle more than one result from the airtable.seach() method
+        total_records = len(records)
+        if total_records:
+            # If more than 1 record was returned log a warning.
+            if total_records > 1:
+                logger.warning(
+                    f"Found {total_records} Airtable records for {airtable_column_name}={value}. "
+                    f"Using first available record ({records[0]['id']}) and ignoring the others."
+                )
+            # Always return the first record
             return records[0]["id"]
+
         return ""
 
     def refresh_mapped_export_fields(self) -> None:

@@ -49,7 +49,7 @@ class AirtableImportListing(TemplateView):
         return model
 
     def get_validated_models(self):
-        """Get models from AIRTABLE_IMPORT_MODELS, validate they exist, and return a list of tuples.
+        """Get models from AIRTABLE_IMPORT_SETTINGS, validate they exist, and return a list of tuples.
 
         returns:
             [

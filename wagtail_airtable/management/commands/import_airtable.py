@@ -1,5 +1,4 @@
 from importlib import import_module
-from requests import HTTPError
 
 from airtable import Airtable
 from django.apps import apps
