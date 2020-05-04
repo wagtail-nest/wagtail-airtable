@@ -107,3 +107,12 @@ Because Airtable doesn't provide a testing environment, you'll need to test agai
 Due to the complexity and fragility of connecting Wagtail and Airtable (because an Airtable column can be almost any value) you may need some help debugging your setup. To turn on higher verbosity output, you can enable the Aritable debug setting `WAGTAIL_AIRTABLE_DEBUG = True`. All this does is increase the default verbosity when running the management command. In a standard Django management command you could run `python manage.py import_airtable appname.ModelName --verbosty=2` however when you import from Airtable using the Wagtail admin import page you won't have access to this verbosity argument. But enabling `WAGTAIL_AIRTABLE_DEBUG` you can manually increase the verbosity.
 
 > **Note**: This only only work while `DEBUG = True` in your settings as to not accidentally flood your production logs.
+
+### Airtable Best Practice
+Airtable columns can be one of numerous "types", very much like a Python data type or Django field. You can have email columns, url columns, single line of text, checkbox, etc.
+
+To help maintain proper data synchronisation between your Django/Wagtail instance and your Airtable Base's, you _should_ set the column types to be as similar to your Django fields as possible.
+
+For example, if you have a BooleanField in a Django model (or Wagtail Page) and you want to support pushing that data to Airtable amd support importing that same data from Airtable, you should set the column type in Airtable to be a Checkbox (because it can only be on/off, much like how a BooleanField can only be True/False).
+
+In other cases such as Airtables Phone Number column type: if you are using a 3rd party package to handle phone numbers and phone number validation, you'll want to write a custom serializer to handle the incoming value from Airtable (when you import from Airtable). The data will likely come through to Wagtail as a string and you'll want to adjust the string value to be a proper phone number format for internal Wagtail/Django storage. (You may also need to convert the phone number to a standard string when exporting to Airtable as well)

@@ -16,9 +16,3 @@ class AirtableSerializer(serializers.Serializer):
             if value == 'None':
                 data[key] = ''
         return data
-
-
-# TODO
-# Create a DateTime Airtable Serializer
-# Create a generic Tag Airtable Serializer
-# Create a RichText Airtable Serializer (import and export)
