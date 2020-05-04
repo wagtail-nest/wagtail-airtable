@@ -31,6 +31,25 @@ class Command(BaseCommand):
         serializer_class = getattr(module, serializer_name)
         return serializer_class
 
+    def _find_parent_model(self, model_label) -> dict:
+        """
+        Loop through all the AIRTABLE_IMPORT_SETTINGS, and look for EXTRA_SUPPORTED_MODELS.
+
+        If there is an EXTRA_SUPPORTED_MODELS key, check if the current model is in the list of
+        models.
+
+        If the `model` is in the list of EXTRA_SUPPORTED_MODELS, return the parent dictionary.
+        """
+        return_settings = {}
+        for model_path, model_settings in settings.AIRTABLE_IMPORT_SETTINGS.items():
+            if model_settings.get("EXTRA_SUPPORTED_MODELS"):
+                models_lower = [x.lower() for x in model_settings.get("EXTRA_SUPPORTED_MODELS")]
+                if model_label.lower() in models_lower:
+                    return_settings = settings.AIRTABLE_IMPORT_SETTINGS[model_path]
+
+        return return_settings
+
+
     def handle(self, *args, **options):
         """
         Runs the management command with the app_name.ModelName as parameters.
@@ -78,7 +97,7 @@ class Command(BaseCommand):
             if options['verbosity'] >= 2:
                 print(message)
 
-        models = []
+        validated_models = []
         for label in options['labels']:
             label = label.lower()
             if '.' in label:
@@ -88,10 +107,37 @@ class Command(BaseCommand):
                 except ObjectDoesNotExist:
                     raise CommandError("%r is not recognised as a model name." % label)
 
-                models.append(model)
+                validated_models.append(model)
+
+        # Loop through each of the validated moels, and look for `EXTRA_SUPPORTED_MODELS`
+        models = validated_models[:]
+        for model in validated_models:
+            airtable_settings = settings.AIRTABLE_IMPORT_SETTINGS.get(model._meta.label, {})
+            # If not allowed to import this model, don't allow EXTRA_SUPPORTED_MODELS either.
+            # Remove this model the the `models` list so it doesn't hit the Airtable API.
+            if not airtable_settings.get("AIRTABLE_IMPORT_ALLOWED", True):
+                models.remove(model)
+                continue
+
+            if airtable_settings.get("EXTRA_SUPPORTED_MODELS"):
+                for label in airtable_settings.get("EXTRA_SUPPORTED_MODELS"):
+                    label = label.lower()
+                    if '.' in label:
+                        # interpret as a model
+                        try:
+                            model = self.get_model_for_path(label)
+                        except ObjectDoesNotExist:
+                            raise CommandError("%r is not recognised as a model name." % label)
+
+                        models.append(model)
 
         debug_message(f"Validated models: {models}")
 
+        # Used for re-using API data instead of making several of API request and waiting/spamming the Airtable API
+        cached_records = {}
+        # Maintain a list of record Ids that were used already. Every record is a unique ID so processing the
+        # Same record more than once will just be hitting the DB over and over and over again. No bueno.
+        records_used = []
         created = 0
         updated = 0
         skipped = 0
@@ -101,9 +147,9 @@ class Command(BaseCommand):
             is_wagtail_model = hasattr(model, 'depth')
             # Airtable global settings.
             airtable_settings = settings.AIRTABLE_IMPORT_SETTINGS.get(model._meta.label, {})
-            # If data should never be imported from Airtable, skip this import iteration.
-            if not airtable_settings.get("AIRTABLE_IMPORT_ALLOWED", True):
-                continue
+            if not airtable_settings:
+                # This could be an EXTRA_SUPPORTED_MODEL in which case we need to use it's parent settings.
+                airtable_settings = self._find_parent_model(model._meta.label_lower)
             # Set the unique identifier and serializer.
             airtable_unique_identifier = airtable_settings.get('AIRTABLE_UNIQUE_IDENTIFIER')
             model_serializer = self.get_model_serializer(airtable_settings.get('AIRTABLE_SERIALIZER'))
@@ -126,9 +172,26 @@ class Command(BaseCommand):
                 api_key=settings.AIRTABLE_API_KEY,
             )
 
-            # Get all the airtable records for the specified table.
-            # TODO try/catch this in case of misconfiguration.
-            all_records = airtable.get_all()
+            # Memoize results from Airtable so we don't hit the same API multiple times
+            # This is largely used to support EXTRA_SUPPORTED_MODELS as they would use the
+            # same Airtable based as the key in the dictionary.
+            #   ie.
+            #   'yourapp.YourPage': {
+            #       ...
+            #       'AIRTABLE_TABLE_NAME': 'Your Table',
+            #       'EXTRA_SUPPORTED_MODELS': ['yourapp.Page2', 'yourapp.Page3']
+            #   }
+            #   All of the above EXTRA_SUPPORTED_MODELS will use the 'Your Table' results
+            #   instead of hitting the Airtable API for each model and getting the same
+            #   results every time
+            if cached_records.get(airtable.table_name):
+                all_records = cached_records.get(airtable.table_name)
+            else:
+                # Get all the airtable records for the specified table.
+                # TODO try/catch this in case of misconfiguration.
+                all_records = airtable.get_all()
+                cached_records[airtable.table_name] = all_records
+
             debug_message(f"\t Airtable base key: {airtable_settings.get('AIRTABLE_BASE_KEY')}")
             debug_message(f"\t Airtable table name: {airtable_settings.get('AIRTABLE_TABLE_NAME')}")
             debug_message(f"\t Airtable unique identifier settings:")
@@ -138,6 +201,10 @@ class Command(BaseCommand):
 
             # Loop through every record in the Airtable.
             for record in all_records:
+                # If a record was used already, skip this iteration.
+                if record['id'] in records_used:
+                    continue
+
                 debug_message("")  # Empty space for nicer debug statement separation
                 record_id = record['id']
                 record_fields = record['fields']
@@ -192,6 +259,8 @@ class Command(BaseCommand):
                                 debug_message("\t\t Saving Django model")
                                 obj.save()
                                 updated = updated + 1
+                            # New record being processed. Save it to the list of records.
+                            records_used.append(record['id'])
                         except ValidationError as error:
                             skipped = skipped + 1
                             error_message = '; '.join(error.messages)
@@ -253,6 +322,8 @@ class Command(BaseCommand):
                                 logger.error(f"Unable to save {obj}. Error(s): {error_message}")
                                 debug_message(f"\t\t Unable to save {obj} (ID: {obj.pk}; Airtable Record ID: {record_id}). Reason: {error_message}")
                                 skipped = skipped + 1
+                            # New record being processed. Save it to the list of records.
+                            records_used.append(record['id'])
                         else:
                             logger.info(f"Invalid data for record {record_id}")
                             debug_message(f"\t\t Serializer data was invalid.")
@@ -277,6 +348,8 @@ class Command(BaseCommand):
                 if hasattr(model, 'depth'):
                     logger.info(f"{model._meta.verbose_name} cannot be created from an import.")
                     debug_message(f"\t\t {model._meta.verbose_name} is a Wagtail Page and cannot be created from an import.")
+                    # New record being processed. Save it to the list of records.
+                    records_used.append(record['id'])
                     continue
 
                 # If there is no match whatsoever, try to create a new `model` instance.
@@ -299,9 +372,10 @@ class Command(BaseCommand):
                     logger.error(f"Unhandled error. Could not create a new object for {model._meta.verbose_name}. Error: {e}")
                     debug_message(f"\t\t Unhandled error. Could not create a new object for {model._meta.verbose_name}. Error: {e}")
 
-        if options['verbosity'] >= 1:
-            self.stdout.write(f"{created} objects created. {updated} objects updated. {skipped} objects skipped.")
 
-        return f"{created} objects created. {updated} objects updated. {skipped} objects skipped."
+        if options['verbosity'] >= 1:
+            self.stdout.write(f"{created} objects created. {updated} objects updated. {skipped} objects skipped. {len(records_used)} total records used.")
+
+        return f"{created} objects created. {updated} objects updated. {skipped} objects skipped. {len(records_used)} total records used."
 
 
