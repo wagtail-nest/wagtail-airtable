@@ -53,7 +53,7 @@ class AirtableImportListing(TemplateView):
 
         returns:
             [
-                ('Credit Card', 'creditcards.creditcard', <CreditCard: Cardname.=>),
+                ('Credit Card', 'creditcards.CreditCard', <CreditCard: Cardname.=>),
                 ('..', '..'),
             ]
         """
@@ -68,15 +68,6 @@ class AirtableImportListing(TemplateView):
                     validated_models.append((model._meta.verbose_name.title(), label, model))
                 except ObjectDoesNotExist:
                     raise CommandError("%r is not recognised as a model name." % label)
-
-                if model_settings.get("EXTRA_SUPPORTED_MODELS"):
-                    for model_path in model_settings.get("EXTRA_SUPPORTED_MODELS"):
-                        model_path = model_path.lower()
-                        try:
-                            model = self._get_model_for_path(model_path)
-                            validated_models.append((model._meta.verbose_name.title(), model_path, model))
-                        except ObjectDoesNotExist:
-                            raise CommandError("%r is not recognised as a model name." % label)
 
         return validated_models
 
