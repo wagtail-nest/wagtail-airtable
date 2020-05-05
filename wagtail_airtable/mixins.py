@@ -23,6 +23,9 @@ class AirtableMixin(models.Model):
     # If the Airtable api setup is complete in this model. Used for singleton-like setup_airtable() method.
     _ran_airtable_setup = False
     # Upon save, should this models data be sent to Airtable?
+    # This is an internal variable. Both _push_to_airtable and push_to_airtable needs to be True
+    # before a push to Airtable will happen.
+    _push_to_airtable = False
     # Case for disabling this: when importing data from Airtable as to not
     # ... import data, save the model, and push the same data back to Airtable.
     push_to_airtable = True
@@ -37,11 +40,15 @@ class AirtableMixin(models.Model):
         self._ran_airtable_setup is used to ensure this method is only ever run once.
         """
         if not self._ran_airtable_setup:
-
+            # Don't run this more than once on a model.
             self._ran_airtable_setup = True
+
+            if not hasattr(settings, 'AIRTABLE_IMPORT_SETTINGS') or not getattr(settings, "WAGTAIL_AIRTABLE_ENABLED", False):
+                # No AIRTABLE_IMPORT_SETTINGS were found. Skip checking for settings.
+                return None
+
             # Look for airtable settings. Default to an empty dict.
             AIRTABLE_SETTINGS = settings.AIRTABLE_IMPORT_SETTINGS.get(self._meta.label, {})
-
             if not AIRTABLE_SETTINGS:
                 AIRTABLE_SETTINGS = self._find_adjacent_models()
 
@@ -63,17 +70,14 @@ class AirtableMixin(models.Model):
                     api_key=settings.AIRTABLE_API_KEY,
                 )
                 self._is_enabled = True
+                # Do not push data to Airtable when tests are running.
+                if not settings.TESTING:
+                    self._push_to_airtable = True
             else:
                 logger.warning(
                     f"Airtable settings are not enabled for the {self._meta.verbose_name} "
                     f"({self._meta.model_name}) model"
                 )
-
-    @property
-    def is_airtable_enabled(self):
-        if not self._ran_airtable_setup:
-            self.setup_airtable()
-        return self._is_enabled
 
     def _find_adjacent_models(self) -> dict:
         # If a base setting for a specified model or Page is not immediately found in the
@@ -93,6 +97,15 @@ class AirtableMixin(models.Model):
                 if self._meta.label_lower in _extra_supported_models:
                     return settings.AIRTABLE_IMPORT_SETTINGS[model_path]
         return {}
+
+    @property
+    def is_airtable_enabled(self):
+        """
+        Used in the template to determine if a model can or cannot be imported from Airtable.
+        """
+        if not self._ran_airtable_setup:
+            self.setup_airtable()
+        return self._is_enabled
 
     def get_import_fields(self):
         """
@@ -217,7 +230,7 @@ class AirtableMixin(models.Model):
         """
         save = super().save(*args, **kwargs)
         self.setup_airtable()
-        if self._is_enabled and getattr(settings, "WAGTAIL_AIRTABLE_ENABLED", False) and self.push_to_airtable:
+        if self._push_to_airtable and self.push_to_airtable:
             # Every airtable model needs mapped fields.
             # mapped_export_fields is a cached property. Delete the cached prop and get new values upon save.
             self.refresh_mapped_export_fields()

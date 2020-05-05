@@ -238,7 +238,9 @@ class Command(BaseCommand):
                             else:
                                 setattr(obj, field_name, value)
                         # When an object is saved it should NOT push its newly saved data back to Airtable.
-                        # This could theoretically cause a loop
+                        # This could theoretically cause a loop. By default this setting is False. But the
+                        # below line confirms it's false, just to be safe.
+                        obj.airtable_record_id = record_id
                         obj.push_to_airtable = False
                         try:
                             if is_wagtail_model:
@@ -298,6 +300,9 @@ class Command(BaseCommand):
                                         obj.tags.add(tag)
                                 else:
                                     setattr(obj, field_name, value)
+                            # When an object is saved it should NOT push its newly saved data back to Airtable.
+                            # This could theoretically cause a loop. By default this setting is False. But the
+                            # below line confirms it's false, just to be safe.
                             obj.airtable_record_id = record_id
                             obj.push_to_airtable = False
                             try:
@@ -316,19 +321,21 @@ class Command(BaseCommand):
                                     # Django model. Save normally.
                                     obj.save()
                                     debug_message("\t\t\t Saved!")
-                                updated = updated + 1
+                                    updated = updated + 1
+
+                                # Record this record as "used"
+                                records_used.append(record['id'])
+                                # New record being processed. Save it to the list of records.
+                                continue
                             except ValidationError as error:
                                 error_message = '; '.join(error.messages)
                                 logger.error(f"Unable to save {obj}. Error(s): {error_message}")
                                 debug_message(f"\t\t Unable to save {obj} (ID: {obj.pk}; Airtable Record ID: {record_id}). Reason: {error_message}")
                                 skipped = skipped + 1
-                            # New record being processed. Save it to the list of records.
-                            records_used.append(record['id'])
                         else:
                             logger.info(f"Invalid data for record {record_id}")
                             debug_message(f"\t\t Serializer data was invalid.")
                             skipped = skipped + 1
-                        continue
                     else:
                         # No object was found by this unique ID.
                         # Do nothing. The next step will be to create this object in Django
