@@ -1,3 +1,4 @@
+import sys
 from importlib import import_module
 from logging import getLogger
 
@@ -10,6 +11,8 @@ from django.utils.functional import cached_property
 
 logger = getLogger(__name__)
 
+
+TESTING = len(sys.argv) > 1 and sys.argv[1] == 'test'
 
 class AirtableMixin(models.Model):
     """A mixin to update an Airtable when a model object is saved or deleted."""
@@ -71,7 +74,7 @@ class AirtableMixin(models.Model):
                 )
                 self._is_enabled = True
                 # Do not push data to Airtable when tests are running.
-                if not settings.TESTING:
+                if not TESTING:
                     self._push_to_airtable = True
             else:
                 logger.warning(
