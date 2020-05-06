@@ -1,4 +1,5 @@
 import sys
+import json
 from importlib import import_module
 from logging import getLogger
 
@@ -28,9 +29,11 @@ class AirtableMixin(models.Model):
     # Upon save, should this models data be sent to Airtable?
     # This is an internal variable. Both _push_to_airtable and push_to_airtable needs to be True
     # before a push to Airtable will happen.
+    # _push_to_airtable is for internal use only
     _push_to_airtable = False
     # Case for disabling this: when importing data from Airtable as to not
     # ... import data, save the model, and push the same data back to Airtable.
+    # push_to_airtable can be set from outside the model
     push_to_airtable = True
 
     airtable_record_id = models.CharField(max_length=35, db_index=True, blank=True)
@@ -226,6 +229,22 @@ class AirtableMixin(models.Model):
         except Exception as e:
             pass
 
+    def parse_request_error(self, error):
+        """
+        Parse an Airtable/requests HTTPError string.
+
+        Example: 401 Client Error: Unauthorized for url: https://api.airtable.com/v0/appYourAppId/Your%20Table?filterByFormula=.... [Error: {'type': 'AUTHENTICATION_REQUIRED', 'message': 'Authentication required'}]
+        """
+
+        code = int(error.split(":", 1)[0].split(" ")[0])
+        error_json = error.split("[Error: ")[1].rstrip("]").replace("\'", "\"")
+        error_info = json.loads(error_json)
+        return {
+            'status_code': code,
+            'type': error_info['type'],
+            'message': error_info['message'],
+        }
+
     def save(self, *args, **kwargs):
         """
         If there's an existing airtable record id, update the row.
@@ -239,11 +258,22 @@ class AirtableMixin(models.Model):
             self.refresh_mapped_export_fields()
             if self.airtable_record_id:
                 # If this model has an airtable_record_id, attempt to update the record.
-                self.update_record()
+                try:
+                    self.update_record()
+                except HTTPError as e:
+                    error = self.parse_request_error(e.args[0])
+                    # TODO: Consider replacing logger.warning in favour of a django message.
+                    logger.warning(f"Could not update Airtable record. Reason: {error['message']}")
             else:
                 # Creating a record will also search for an existing field match
                 # ie. Looks for a matching `slug` in Airtable and Wagtail/Django
-                self.create_record()
+                try:
+                    self.create_record()
+                except HTTPError as e:
+                    error = self.parse_request_error(e.args[0])
+                    # TODO: Consider replacing logger.warning in favour of a django message.
+                    logger.warning(f"Could not create Airtable record. Reason: {error['message']}")
+
             super().save(*args, **kwargs)
         return save
 
