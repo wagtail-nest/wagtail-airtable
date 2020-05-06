@@ -359,6 +359,20 @@ class Command(BaseCommand):
                     records_used.append(record['id'])
                     continue
 
+
+                # First things first, remove any "pk" or "id" items form the mapped_import_fields
+                # This will let Django and Wagtail handle the PK on its own, as it should.
+                # When the model is saved it'll trigger a push to Airtable and automatically update
+                # the necessary column with the new PK so it's always accurate.
+                try:
+                    del mapped_import_fields['pk']
+                except KeyError:
+                    pass
+                try:
+                    del mapped_import_fields['id']
+                except KeyError:
+                    pass
+
                 # If there is no match whatsoever, try to create a new `model` instance.
                 # Note: this may fail if there isn't enough data in the Airtable record.
                 try:
