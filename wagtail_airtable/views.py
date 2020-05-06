@@ -12,8 +12,6 @@ from wagtail.core.rich_text import expand_db_html
 from django.core.exceptions import ObjectDoesNotExist
 from logging import getLogger
 
-from project.fastly_cache_backend import purge_key_from_fastly_cache
-
 logger = getLogger(__name__)
 
 
