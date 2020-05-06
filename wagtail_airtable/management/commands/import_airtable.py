@@ -363,6 +363,7 @@ class Command(BaseCommand):
                 # Note: this may fail if there isn't enough data in the Airtable record.
                 try:
                     debug_message(f"\t\t Attempting to create a new object...")
+                    mapped_import_fields['airtable_record_id'] = record_id
                     model.objects.create(**mapped_import_fields)
                     debug_message(f"\t\t Object created")
                     created = created + 1
