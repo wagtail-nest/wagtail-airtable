@@ -1,5 +1,6 @@
 import sys
 import json
+from ast import literal_eval
 from importlib import import_module
 from logging import getLogger
 
@@ -237,8 +238,8 @@ class AirtableMixin(models.Model):
         """
 
         code = int(error.split(":", 1)[0].split(" ")[0])
-        error_json = error.split("[Error: ")[1].rstrip("]").replace("\'", "\"")
-        error_info = json.loads(error_json)
+        error_json = error.split("[Error: ")[1].rstrip("]")
+        error_info = literal_eval(error_json)
         return {
             'status_code': code,
             'type': error_info['type'],
