@@ -2,15 +2,14 @@ import requests
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
-from django.core.cache import cache
 from django.core.management import CommandError, call_command
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.views.generic import TemplateView, RedirectView
-from rest_framework import fields
-from wagtail.core.rich_text import expand_db_html
+from django.views.generic import TemplateView
 from django.core.exceptions import ObjectDoesNotExist
 from logging import getLogger
+
+from wagtail_airtable.forms import AirtableImportModelForm
 
 logger = getLogger(__name__)
 
@@ -21,14 +20,18 @@ class AirtableImportListing(TemplateView):
     """
 
     template_name = "wagtail_airtable/airtable_import_listing.html"
+    http_method_names = ['get', 'post']
 
-    def dispatch(self, request, *args, **kwargs):
-        if 'import' in request.GET:
-            model_label = request.GET.get("import")
+    def post(self, request, *args, **kwargs):
+        form = AirtableImportModelForm(request.POST)
+        if form.is_valid():
+            model_label = form.cleaned_data['model']
             message = call_command("import_airtable", model_label, verbosity=1)
             messages.add_message(request, messages.SUCCESS, f'Import succeeded with {message}')
-            return redirect(reverse('airtable_import_listing'))
-        return super().dispatch(request, *args, **kwargs)
+        else:
+            messages.add_message(request, messages.ERROR, 'Could not import')
+
+        return redirect(reverse('airtable_import_listing'))
 
     def _get_model_for_path(self, model_path):
         """
