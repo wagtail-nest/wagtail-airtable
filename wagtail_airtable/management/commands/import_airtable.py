@@ -359,45 +359,53 @@ class Command(BaseCommand):
                     records_used.append(record['id'])
                     continue
 
+                # Check if we can use the serialized data to create a new model.
+                # If we can, great! If not, fall back to the original mapped_import_fields
+                # If this has to fall back to the original mapped_import_fields: failure
+                # to create a model will be higher than normal.
+                if serialized_data.is_valid():
+                    data_for_new_model = dict(serialized_data.validated_data)
+                else:
+                    data_for_new_model = mapped_import_fields
+                data_for_new_model['airtable_record_id'] = record_id
 
                 # First things first, remove any "pk" or "id" items form the mapped_import_fields
                 # This will let Django and Wagtail handle the PK on its own, as it should.
                 # When the model is saved it'll trigger a push to Airtable and automatically update
                 # the necessary column with the new PK so it's always accurate.
-                try:
-                    del mapped_import_fields['pk']
-                except KeyError:
-                    pass
-                try:
-                    del mapped_import_fields['id']
-                except KeyError:
-                    pass
+                for key in ('pk', 'id',):
+                    try:
+                        del data_for_new_model[key]
+                    except KeyError:
+                        pass
 
                 # If there is no match whatsoever, try to create a new `model` instance.
                 # Note: this may fail if there isn't enough data in the Airtable record.
                 try:
                     debug_message(f"\t\t Attempting to create a new object...")
-                    mapped_import_fields['airtable_record_id'] = record_id
-                    model.objects.create(**mapped_import_fields)
+                    # NOTE: model.objects.create(**data_for_new_model) always throws an
+                    # IntegrityError saying the UNIQUE constraint on `id` is the problem.
+                    # Use a for loop and setting the fields one-by-one is a work around that.
+                    new_model = model()
+                    for field_name, value in data_for_new_model.items():
+                        setattr(new_model, field_name, value)
+                    new_model.save()
                     debug_message(f"\t\t Object created")
                     created = created + 1
                 except ValueError as value_error:
-                    logger.info(f"Could not create new model. Error: {value_error}")
-                    debug_message(f"\t\t Could not create new model. Error: {value_error}")
+                    logger.info(f"Could not create new model object. Value Error: {value_error}")
+                    debug_message(f"\t\t Could not create new model object. Value Error: {value_error}")
                 except IntegrityError as e:
-                    logger.info(f"Could not create new model. Error: {e}")
-                    debug_message(f"\t\t Could not create new model. Error: {e}")
+                    logger.info(f"Could not create new model object. Integrity Error: {e}")
+                    debug_message(f"\t\t Could not create new model object. Integrity Error: {e}")
                 except AttributeError as e:
-                    logger.info(f"Could not create new model. AttributeError. Error: {e}")
-                    debug_message(f"\t\t Could not create new model. AttributeError. Error: {e}")
+                    logger.info(f"Could not create new model object. AttributeError. Error: {e}")
+                    debug_message(f"\t\t Could not create new model object. AttributeError. Error: {e}")
                 except Exception as e:
                     logger.error(f"Unhandled error. Could not create a new object for {model._meta.verbose_name}. Error: {e}")
                     debug_message(f"\t\t Unhandled error. Could not create a new object for {model._meta.verbose_name}. Error: {e}")
-
 
         if options['verbosity'] >= 1:
             self.stdout.write(f"{created} objects created. {updated} objects updated. {skipped} objects skipped. {len(records_used)} total records used.")
 
         return f"{created} objects created. {updated} objects updated. {skipped} objects skipped. {len(records_used)} total records used."
-
-
