@@ -20,6 +20,8 @@
       {% else %}
         <em>{{ model_name }} is not setup with the correct Airtable settings</em>
       {% endif %}
+    {% empty %}
+      <em>There are no models configured yet</em>
     {% endfor %}
   </div>
 {% endblock %}
