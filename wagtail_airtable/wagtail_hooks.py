@@ -1,11 +1,12 @@
 from django.conf import settings
 from django.conf.urls import url
+from django.contrib import messages
 from django.urls import reverse
 from wagtail.core import hooks
 from wagtail.admin.menu import MenuItem
 
 from wagtail_airtable.views import AirtableImportListing
-
+from .mixins import AirtableMixin
 
 @hooks.register('register_admin_urls')
 def register_airtable_url():
@@ -28,3 +29,19 @@ def register_airtable_setting():
     )
     menu_item.is_shown = is_shown
     return menu_item
+
+
+@hooks.register('after_edit_page')
+def after_page_update(request, page):
+    # Check if the page is an AirtableMixin Subclass
+    if issubclass(page.__class__, AirtableMixin):
+        # When AirtableMixin.save() is called..
+        # Either it'll connect with Airtable and update the row as expected, or
+        # it will have some type of error.
+        # If _airtable_update_error exists on the page, use that string as the
+        # message error.
+        # Otherwise assume a successful update happened on the Airtable row
+        if hasattr(page, '_airtable_update_error'):
+            messages.add_message(request, messages.ERROR, page._airtable_update_error)
+        else:
+            messages.add_message(request, messages.SUCCESS, "Airtable record updated")

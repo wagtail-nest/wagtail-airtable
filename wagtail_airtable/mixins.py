@@ -251,7 +251,6 @@ class AirtableMixin(models.Model):
         If there's an existing airtable record id, update the row.
         Otherwise attempt to create a new record.
         """
-        save = super().save(*args, **kwargs)
         self.setup_airtable()
         if self._push_to_airtable and self.push_to_airtable:
             # Every airtable model needs mapped fields.
@@ -263,8 +262,10 @@ class AirtableMixin(models.Model):
                     self.update_record()
                 except HTTPError as e:
                     error = self.parse_request_error(e.args[0])
-                    # TODO: Consider replacing logger.warning in favour of a django message.
-                    logger.warning(f"Could not update Airtable record. Reason: {error['message']}")
+                    message = f"Could not update Airtable record. Reason: {error['message']}"
+                    logger.warning(message)
+                    # Used in the `after_edit_page` hook. If it exists, an error message will be displayed.
+                    self._airtable_update_error = message
             else:
                 # Creating a record will also search for an existing field match
                 # ie. Looks for a matching `slug` in Airtable and Wagtail/Django
@@ -272,16 +273,17 @@ class AirtableMixin(models.Model):
                     self.create_record()
                 except HTTPError as e:
                     error = self.parse_request_error(e.args[0])
-                    # TODO: Consider replacing logger.warning in favour of a django message.
-                    logger.warning(f"Could not create Airtable record. Reason: {error['message']}")
+                    message = f"Could not create Airtable record. Reason: {error['message']}"
+                    logger.warning(message)
+                    # Used in the `after_edit_page` hook. If it exists, an error message will be displayed.
+                    self._airtable_update_error = message
 
-            super().save(*args, **kwargs)
-        return save
+        return super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         self.setup_airtable()
         if self.airtable_record_id:
-            # Try to delete the record from the Air Table.
+            # Try to delete the record from the Airtable.
             self.delete_record()
         return super().delete(*args, **kwargs)
 
