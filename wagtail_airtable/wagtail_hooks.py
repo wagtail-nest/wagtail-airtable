@@ -34,7 +34,7 @@ def register_airtable_setting():
 @hooks.register('after_edit_page')
 def after_page_update(request, page):
     # Check if the page is an AirtableMixin Subclass
-    if issubclass(page.__class__, AirtableMixin):
+    if settings.WAGTAIL_AIRTABLE_ENABLED and issubclass(page.__class__, AirtableMixin):
         # When AirtableMixin.save() is called..
         # Either it'll connect with Airtable and update the row as expected, or
         # it will have some type of error.
@@ -43,5 +43,20 @@ def after_page_update(request, page):
         # Otherwise assume a successful update happened on the Airtable row
         if hasattr(page, '_airtable_update_error'):
             messages.add_message(request, messages.ERROR, page._airtable_update_error)
+        else:
+            messages.add_message(request, messages.SUCCESS, "Airtable record updated")
+
+
+@hooks.register('after_edit_snippet')
+def after_snippet_update(request, instance):
+    if settings.WAGTAIL_AIRTABLE_ENABLED and issubclass(instance.__class__, AirtableMixin):
+        # When AirtableMixin.save() is called..
+        # Either it'll connect with Airtable and update the row as expected, or
+        # it will have some type of error.
+        # If _airtable_update_error exists on the page, use that string as the
+        # message error.
+        # Otherwise assume a successful update happened on the Airtable row
+        if hasattr(instance, '_airtable_update_error'):
+            messages.add_message(request, messages.ERROR, instance._airtable_update_error)
         else:
             messages.add_message(request, messages.SUCCESS, "Airtable record updated")
