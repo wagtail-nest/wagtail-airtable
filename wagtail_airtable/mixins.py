@@ -11,10 +11,13 @@ from requests import HTTPError
 
 from django.utils.functional import cached_property
 
+from .tests import MockAirtable
+
 logger = getLogger(__name__)
 
 
-TESTING = len(sys.argv) > 1 and sys.argv[1] == 'test'
+TESTING = any(x in ['test', 'runtests.py'] for x in sys.argv)
+
 
 class AirtableMixin(models.Model):
     """A mixin to update an Airtable when a model object is saved or deleted."""
@@ -71,15 +74,21 @@ class AirtableMixin(models.Model):
                 and self.AIRTABLE_TABLE_NAME
                 and self.AIRTABLE_UNIQUE_IDENTIFIER
             ):
-                self.client = Airtable(
-                    self.AIRTABLE_BASE_KEY,
-                    self.AIRTABLE_TABLE_NAME,
-                    api_key=settings.AIRTABLE_API_KEY,
-                )
-                self._is_enabled = True
-                # Do not push data to Airtable when tests are running.
                 if not TESTING:
-                    self._push_to_airtable = True
+                    self.client = Airtable(
+                        self.AIRTABLE_BASE_KEY,
+                        self.AIRTABLE_TABLE_NAME,
+                        api_key=settings.AIRTABLE_API_KEY,
+                    )
+                else:
+                    self.client = MockAirtable(
+                        self.AIRTABLE_BASE_KEY,
+                        self.AIRTABLE_TABLE_NAME,
+                        api_key=settings.AIRTABLE_API_KEY,
+                    )
+
+                self._push_to_airtable = True
+                self._is_enabled = True
             else:
                 logger.warning(
                     f"Airtable settings are not enabled for the {self._meta.verbose_name} "
@@ -140,7 +149,7 @@ class AirtableMixin(models.Model):
     def mapped_export_fields(self):
         return self.get_export_fields()
 
-    def create_record(self):
+    def create_record(self) -> dict:
         """
         Create or update a record.
 
@@ -173,7 +182,6 @@ class AirtableMixin(models.Model):
         If a record does not exist, it will call self.create_record()
         """
         airtable_record_id = airtable_record_id or self.airtable_record_id
-
         if self.check_record_exists(airtable_record_id):
             # Record exists in Airtable
             record = self.client.update(airtable_record_id, self.mapped_export_fields)
@@ -195,7 +203,6 @@ class AirtableMixin(models.Model):
 
     def match_record(self) -> str:
         """Look for a record in an Airtable. Search by the AIRTABLE_UNIQUE_IDENTIFIER."""
-
         if type(self.AIRTABLE_UNIQUE_IDENTIFIER) == dict:
             keys = list(self.AIRTABLE_UNIQUE_IDENTIFIER.keys())
             values = list(self.AIRTABLE_UNIQUE_IDENTIFIER.values())
@@ -208,13 +215,12 @@ class AirtableMixin(models.Model):
             _airtable_unique_identifier = self.AIRTABLE_UNIQUE_IDENTIFIER
             value = getattr(self, _airtable_unique_identifier)
             airtable_column_name = self.AIRTABLE_UNIQUE_IDENTIFIER
-
         records = self.client.search(airtable_column_name, value)
         total_records = len(records)
         if total_records:
             # If more than 1 record was returned log a warning.
             if total_records > 1:
-                logger.warning(
+                logger.info(
                     f"Found {total_records} Airtable records for {airtable_column_name}={value}. "
                     f"Using first available record ({records[0]['id']}) and ignoring the others."
                 )
@@ -230,7 +236,8 @@ class AirtableMixin(models.Model):
         except Exception as e:
             pass
 
-    def parse_request_error(self, error):
+    @classmethod
+    def parse_request_error(cls, error):
         """
         Parse an Airtable/requests HTTPError string.
 
@@ -239,12 +246,19 @@ class AirtableMixin(models.Model):
 
         code = int(error.split(":", 1)[0].split(" ")[0])
         error_json = error.split("[Error: ")[1].rstrip("]")
-        error_info = literal_eval(error_json)
-        return {
-            'status_code': code,
-            'type': error_info['type'],
-            'message': error_info['message'],
-        }
+        if error_json == 'NOT_FOUND': # 404's act different
+            return {
+                'status_code': code,
+                'type': 'NOT_FOUND',
+                'message': 'Record not found',
+            }
+        else:
+            error_info = literal_eval(error_json)
+            return {
+                'status_code': code,
+                'type': error_info['type'],
+                'message': error_info['message'],
+            }
 
     def save(self, *args, **kwargs):
         """
