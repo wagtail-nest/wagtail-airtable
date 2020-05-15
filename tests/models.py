@@ -41,7 +41,7 @@ class Advert(AirtableMixin, models.Model):
     slug = models.SlugField(max_length=100, unique=True, editable=True)
 
     @classmethod
-    def map_import_fields(cls, incoming_dict_fields={}):
+    def map_import_fields(cls):
         """{'Airtable column name': 'model_field_name', ...}"""
         mappings = {
             "title": "title",
@@ -74,3 +74,13 @@ class Advert(AirtableMixin, models.Model):
 
     def __str__(self):
         return self.title
+
+
+@register_snippet
+class SimilarToAdvert(Advert):
+    pass
+
+
+@register_snippet
+class ModelNotUsed(AirtableMixin, models.Model):
+    pass

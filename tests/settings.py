@@ -136,5 +136,6 @@ AIRTABLE_IMPORT_SETTINGS = {
         'AIRTABLE_TABLE_NAME': 'Advert Table Name',
         'AIRTABLE_UNIQUE_IDENTIFIER': 'slug',
         'AIRTABLE_SERIALIZER': 'tests.serializers.AdvertSerializer',
+        'EXTRA_SUPPORTED_MODELS': ['tests.SimilarToAdvert']
     }
 }
