@@ -45,10 +45,11 @@ def after_page_update(request, page):
         # If _airtable_update_error exists on the page, use that string as the
         # message error.
         # Otherwise assume a successful update happened on the Airtable row
-        if hasattr(page, "_airtable_update_error"):
-            messages.add_message(request, messages.ERROR, page._airtable_update_error)
-        else:
-            messages.add_message(request, messages.SUCCESS, "Airtable record updated")
+        if hasattr(page, 'is_airtable_enabled') and page.is_airtable_enabled:
+            if hasattr(page, "_airtable_update_error"):
+                messages.add_message(request, messages.ERROR, page._airtable_update_error)
+            else:
+                messages.add_message(request, messages.SUCCESS, "Airtable record updated")
 
 
 @hooks.register("after_edit_snippet")
@@ -62,9 +63,10 @@ def after_snippet_update(request, instance):
         # If _airtable_update_error exists on the page, use that string as the
         # message error.
         # Otherwise assume a successful update happened on the Airtable row
-        if hasattr(instance, "_airtable_update_error"):
-            messages.add_message(
-                request, messages.ERROR, instance._airtable_update_error
-            )
-        else:
-            messages.add_message(request, messages.SUCCESS, "Airtable record updated")
+        if hasattr(instance, 'is_airtable_enabled') and instance.is_airtable_enabled:
+            if hasattr(instance, "_airtable_update_error"):
+                messages.add_message(
+                    request, messages.ERROR, instance._airtable_update_error
+                )
+            else:
+                messages.add_message(request, messages.SUCCESS, "Airtable record updated")
