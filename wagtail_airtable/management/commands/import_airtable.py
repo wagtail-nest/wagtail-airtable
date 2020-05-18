@@ -227,7 +227,7 @@ class Importer:
                 self.skipped = self.skipped + 1
                 error_message = "; ".join(error.messages)
                 logger.error(
-                    f"Unable to save {instance._meta.label} -> '{obj}'. Error(s): {error_message}"
+                    f"Unable to save {instance._meta.label} -> '{instance}'. Error(s): {error_message}"
                 )
                 self.debug_message(
                     f"\t\t Could not save Wagtail/Django model. Error: {error_message}"
