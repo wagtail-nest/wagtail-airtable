@@ -4,7 +4,7 @@ from unittest import mock
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 
 from wagtail_airtable.management.commands.import_airtable import Importer
 from wagtail_airtable.tests import MockAirtable
@@ -14,6 +14,7 @@ from tests.serializers import AdvertSerializer
 
 # TODO: Add import tests
 class TestImportClass(TestCase):
+    fixtures = ['test.json']
 
     def setUp(self):
         self.options = {
@@ -24,8 +25,7 @@ class TestImportClass(TestCase):
         models = ["fake.ModelName"]
         text = "Testing debug message with high verbosity"
 
-        # Default verbosity
-        importer = Importer(models=models)
+        importer = Importer(models=models, options=self.options)
         debug_message = importer.debug_message(text)
         self.assertEqual(debug_message, text)
 
@@ -45,13 +45,15 @@ class TestImportClass(TestCase):
         models = ["tests.Advert"]
         importer = Importer(models=models)
         models = importer.get_validated_models()
-        self.assertListEqual(models, [Advert])
+        # `SimilarToAdvert` is added because it's an EXTRA_SUPPORTED_MODEL for `Advert`
+        self.assertListEqual(models, [Advert, SimilarToAdvert])
 
     def test_get_validated_models_with_multiple_valid_models(self):
         models = ["tests.Advert", "tests.SimplePage"]
         importer = Importer(models=models)
         models = importer.get_validated_models()
-        self.assertListEqual(models, [Advert, SimplePage])
+        # `SimilarToAdvert` is added because it's an EXTRA_SUPPORTED_MODEL for `Advert`
+        self.assertListEqual(models, [Advert, SimplePage, SimilarToAdvert])
 
     def test_get_model_for_path(self):
         importer = Importer(models=[])
@@ -192,8 +194,252 @@ class TestImportClass(TestCase):
         # passed into the newly mapped fields
         self.assertFalse(hasattr(mapped_fields, 'extra_field_from_airtable'))
 
+    def test_update_object(self):
+        importer = Importer(models=["tests.Advert"])
+        advert_serializer = importer.get_model_serializer("tests.serializers.AdvertSerializer")
+        record_fields_dict = {
+            "Page Title": "Red! It's the new blue!",
+            "SEO Description": "Red is a scientifically proven...",
+            "External Link": "https://example.com/",
+            "Is Active": True,
+            "rating": "1.5",
+            "long_description": "<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veniam laboriosam consequatur saepe. Repellat itaque dolores neque, impedit reprehenderit eum culpa voluptates harum sapiente nesciunt ratione.</p>",
+            "points": 95,
+            "slug": "red-its-new-blue",
+        }
+        mapped_fields_dict = {
+            "Page Title": "title",
+            "SEO Description": "description",
+            "External Link": "external_link",
+            "Is Active": "is_active",
+            "slug": "slug",
+        }
+        mapped_fields = importer.convert_mapped_fields(
+            record_fields_dict,
+            mapped_fields_dict,
+        )
+        # Ensure mapped_fields are mapped properly
+        self.assertEqual(
+            mapped_fields['description'],
+            "Red is a scientifically proven...",
+        )
+        # Check serialized data is valid
+        serialized_data = advert_serializer(data=mapped_fields)
+        is_valid = serialized_data.is_valid()
+        self.assertTrue(is_valid)
+        # Get the advert object.
+        instance = Advert.objects.first()
+        self.assertEqual(instance.airtable_record_id, '')
+        # Importer should have zero updates objects.
+        self.assertEqual(importer.updated, 0)
 
-class TestImportCommand(TestCase):
+        saved = importer.update_object(instance, 'recNewRecordId', serialized_data)
+
+        self.assertTrue(saved)
+        self.assertEqual(importer.updated, 1)
+        self.assertEqual(importer.records_used, ['recNewRecordId'])
+        # Re-fetch the Advert instance and check its airtable_record_id
+        instance = Advert.objects.first()
+        self.assertEqual(instance.airtable_record_id, 'recNewRecordId')
+
+    def test_update_object_with_invalid_serialized_data(self):
+        instance = Advert.objects.first()
+        importer = Importer(models=["tests.Advert"])
+        advert_serializer = importer.get_model_serializer("tests.serializers.AdvertSerializer")
+        record_fields_dict = {
+            "SEO Description": "Red is a scientifically proven...",
+            "External Link": "https://example.com/",
+            "slug": "red-its-new-blue",
+        }
+        mapped_fields_dict = {
+            "SEO Description": "description",
+            "External Link": "external_link",
+            "slug": "slug",
+        }
+        mapped_fields = importer.convert_mapped_fields(
+            record_fields_dict,
+            mapped_fields_dict,
+        )
+        serialized_data = advert_serializer(data=mapped_fields)
+        is_valid = serialized_data.is_valid()
+        self.assertFalse(is_valid)
+        with self.assertRaises(NameError) as context:
+            saved = importer.update_object(instance, 'recNewRecordId', serialized_data)
+            self.assertFalse(saved)
+        error_message = str(context.exception)
+        self.assertEqual(error_message, "name 'airtable_unique_identifier_column_name' is not defined")
+
+    def test_update_object_by_uniq_col_name_missing_uniq_id(self):
+        importer = Importer()
+        updated = importer.update_object_by_uniq_col_name(
+            field_mapping={'slug': ''},
+            model=Advert,
+            serialized_data=object,
+            record_id='',
+        )
+
+        self.assertFalse(updated)
+        self.assertEqual(importer.skipped, 1)
+
+    def test_update_object_by_uniq_col_name_object_found(self):
+        importer = Importer(models=["tests.Advert"])
+        advert_serializer = importer.get_model_serializer("tests.serializers.AdvertSerializer")
+        record_fields_dict = {
+            "Page Title": "Red! It's the new blue!",
+            "SEO Description": "Red is a scientifically proven...",
+            "External Link": "https://example.com/UPDATED",
+            "Is Active": True,
+            "rating": "1.5",
+            "long_description": "<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veniam laboriosam consequatur saepe. Repellat itaque dolores neque, impedit reprehenderit eum culpa voluptates harum sapiente nesciunt ratione.</p>",
+            "points": 95,
+            "slug": "red-its-new-blue",
+        }
+        mapped_fields_dict = {
+            "Page Title": "title",
+            "SEO Description": "description",
+            "External Link": "external_link",
+            "Is Active": "is_active",
+            "slug": "slug",
+        }
+        mapped_fields = importer.convert_mapped_fields(
+            record_fields_dict,
+            mapped_fields_dict,
+        )
+        # Check serialized data is valid
+        serialized_data = advert_serializer(data=mapped_fields)
+        self.assertTrue(serialized_data.is_valid())
+
+        # with self.assertRaises(AttributeError)
+        updated = importer.update_object_by_uniq_col_name(
+            field_mapping={'slug': 'red-its-new-blue'},
+            model=Advert,
+            serialized_data=serialized_data,
+            record_id='recNewRecordId',
+        )
+        self.assertTrue(updated)
+        self.assertEqual(importer.skipped, 0)
+        self.assertEqual(importer.updated, 1)
+
+        advert = Advert.objects.get(slug="red-its-new-blue")
+        self.assertEqual(advert.external_link, "https://example.com/UPDATED")
+
+    def test_update_object_by_uniq_col_name_object_not_found(self):
+        importer = Importer(models=["tests.Advert"])
+        advert_serializer = importer.get_model_serializer("tests.serializers.AdvertSerializer")
+        record_fields_dict = {
+            "Page Title": "Red! It's the new blue!",
+            "SEO Description": "Red is a scientifically proven...",
+            "External Link": "https://example.com/",
+            "Is Active": True,
+            "rating": "1.5",
+            "long_description": "<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veniam laboriosam consequatur saepe. Repellat itaque dolores neque, impedit reprehenderit eum culpa voluptates harum sapiente nesciunt ratione.</p>",
+            "points": 95,
+            "slug": "red-its-new-blue",
+        }
+        mapped_fields_dict = {
+            "Page Title": "title",
+            "SEO Description": "description",
+            "External Link": "external_link",
+            "Is Active": "is_active",
+            "slug": "slug",
+        }
+        mapped_fields = importer.convert_mapped_fields(
+            record_fields_dict,
+            mapped_fields_dict,
+        )
+        # Check serialized data is valid
+        serialized_data = advert_serializer(data=mapped_fields)
+        self.assertTrue(serialized_data.is_valid())
+
+        # with self.assertRaises(AttributeError)
+        updated = importer.update_object_by_uniq_col_name(
+            field_mapping={'slug': 'MISSING-OBJECT'},
+            model=Advert,
+            serialized_data=serialized_data,
+            record_id='recNewRecordId',
+        )
+        self.assertFalse(updated)
+        self.assertEqual(importer.updated, 0)
+
+    def test_is_wagtail_page(self):
+        importer = Importer()
+        self.assertTrue(importer.is_wagtail_page(SimplePage))
+        self.assertFalse(importer.is_wagtail_page(Advert))
+
+    def test_get_data_for_new_model_with_valid_serialized_data(self):
+        importer = Importer(models=["tests.Advert"])
+        advert_serializer = importer.get_model_serializer("tests.serializers.AdvertSerializer")
+        record_fields_dict = {
+            "Page Title": "Red! It's the new blue!",
+            "SEO Description": "Red is a scientifically proven...",
+            "External Link": "https://example.com/",
+            "Is Active": True,
+            "rating": "1.5",
+            "long_description": "<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veniam laboriosam consequatur saepe. Repellat itaque dolores neque, impedit reprehenderit eum culpa voluptates harum sapiente nesciunt ratione.</p>",
+            "points": 95,
+            "slug": "red-its-new-blue",
+        }
+        mapped_fields_dict = {
+            "Page Title": "title",
+            "SEO Description": "description",
+            "External Link": "external_link",
+            "Is Active": "is_active",
+            "slug": "slug",
+        }
+        mapped_fields = importer.convert_mapped_fields(
+            record_fields_dict,
+            mapped_fields_dict,
+        )
+        # Check serialized data is valid
+        serialized_data = advert_serializer(data=mapped_fields)
+        is_valid = serialized_data.is_valid()
+        self.assertTrue(is_valid)
+
+        data_for_new_model = importer.get_data_for_new_model(serialized_data, mapped_fields, 'recSomeRecordId')
+        self.assertTrue(data_for_new_model.get('airtable_record_id'))
+        self.assertEqual(data_for_new_model['airtable_record_id'], 'recSomeRecordId')
+        self.assertIsNone(data_for_new_model.get('id'))
+        self.assertIsNone(data_for_new_model.get('pk'))
+
+        new_dict = dict(serialized_data.validated_data)
+        new_dict['airtable_record_id'] = 'recSomeRecordId'
+        self.assertDictEqual(new_dict, data_for_new_model)
+
+    def test_get_data_for_new_model_with_invalid_serialized_data(self):
+        importer = Importer(models=["tests.Advert"])
+        advert_serializer = importer.get_model_serializer("tests.serializers.AdvertSerializer")
+        record_fields_dict = {
+            "SEO Description": "Red is a scientifically proven...",
+            "External Link": "https://example.com/",
+            "slug": "red-its-new-blue",
+        }
+        mapped_fields_dict = {
+            "SEO Description": "description",
+            "External Link": "external_link",
+            "slug": "slug",
+        }
+        mapped_fields = importer.convert_mapped_fields(
+            record_fields_dict,
+            mapped_fields_dict,
+        )
+        # Check serialized data is valid
+        serialized_data = advert_serializer(data=mapped_fields)
+        is_valid = serialized_data.is_valid()
+        self.assertFalse(is_valid)
+
+        data_for_new_model = importer.get_data_for_new_model(serialized_data, mapped_fields, 'recSomeRecordId')
+        self.assertTrue(data_for_new_model.get('airtable_record_id'))
+        self.assertEqual(data_for_new_model['airtable_record_id'], 'recSomeRecordId')
+        self.assertIsNone(data_for_new_model.get('id'))
+        self.assertIsNone(data_for_new_model.get('pk'))
+
+        new_dict = mapped_fields.copy()
+        new_dict['airtable_record_id'] = 'recSomeRecordId'
+        self.assertDictEqual(new_dict, data_for_new_model)
+
+
+class TestImportCommand(TransactionTestCase):
+    fixtures = ['test.json']
 
     def setUp(self):
         pass

@@ -7,3 +7,4 @@ class AdvertSerializer(AirtableSerializer):
 
     slug = serializers.CharField(max_length=100, required=True)
     title = serializers.CharField(max_length=255)
+    external_link = serializers.URLField(required=False)
