@@ -9,8 +9,8 @@ class AirtableImportModelForm(forms.Form):
     def clean_model(self):
         """Make sure this model is in the AIRTABLE_IMPORT_SETTINGS config."""
 
-        model_label = self.cleaned_data['model'].lower()
-        airtable_settings = getattr(settings, 'AIRTABLE_IMPORT_SETTINGS', {})
+        model_label = self.cleaned_data["model"].lower()
+        airtable_settings = getattr(settings, "AIRTABLE_IMPORT_SETTINGS", {})
         is_valid_model = False
 
         for label, model_settings in airtable_settings.items():
@@ -18,7 +18,10 @@ class AirtableImportModelForm(forms.Form):
                 is_valid_model = True
                 break
             # Check extra support models.
-            extra_support_models = [model.lower() for model in model_settings.get("EXTRA_SUPPORTED_MODELS", [])]
+            extra_support_models = [
+                model.lower()
+                for model in model_settings.get("EXTRA_SUPPORTED_MODELS", [])
+            ]
             if model_label in extra_support_models:
                 is_valid_model = True
                 break

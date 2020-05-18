@@ -10,10 +10,6 @@ from wagtail_airtable.mixins import AirtableMixin
 class SimplePage(Page):
     intro = models.TextField()
 
-    # TODO: Create Page model tests
-    # TODO: Create adjacent page models and settings
-
-
 @register_snippet
 class Advert(AirtableMixin, models.Model):
 

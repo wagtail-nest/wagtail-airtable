@@ -43,7 +43,7 @@ class HomePage(AirtableMixin, Page):
             # I've kept "slug" commented out so Airtable cannot overwrite the Page slug as that could cause a lot of trouble with URLs and SEO. But it's possible to do this assuming there aren't two pages with the same slug.
             # "Slug": "slug",
             "Awesomeness Rating": "total_awesomeness",
-            "Last Updated": "last_published_at"
+            "Last Updated": "last_published_at",
         }
         return mappings
 
@@ -62,11 +62,15 @@ class HomePage(AirtableMixin, Page):
         return {
             "Name": self.name,
             "Slug": self.slug,  # `slug` is a field found on Page that comes with Wagtail
-            "Awesomeness Rating": str(self.total_awesomeness) if self.total_awesomeness else None, # Send the Decimal as a string.
-            "Top Rated Awesomeness": self.top_rated_page, # Must be a checkbox column in Airtable.
+            "Awesomeness Rating": str(self.total_awesomeness)
+            if self.total_awesomeness
+            else None,  # Send the Decimal as a string.
+            "Top Rated Awesomeness": self.top_rated_page,  # Must be a checkbox column in Airtable.
             # If a cell in Airtable should always be filled, but the data might be optional at some point
             # You can use a function, method, custom property or ternary operator to set the defaults.
-            "Last Updated": self.last_published_at if self.last_published_at else timezone.now().isoformat(),
+            "Last Updated": self.last_published_at
+            if self.last_published_at
+            else timezone.now().isoformat(),
         }
 
     class Meta:

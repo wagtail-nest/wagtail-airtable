@@ -2,7 +2,9 @@ from rest_framework import serializers
 
 
 class AirtableSerializer(serializers.Serializer):
-    """Generic Airtable serializer for parsing Airtable API JSON data into proper model data."""
+    """
+    Generic Airtable serializer for parsing Airtable API JSON data into proper model data.
+    """
 
     def validate(self, data):
         """
@@ -12,7 +14,7 @@ class AirtableSerializer(serializers.Serializer):
         so we need to loop through every value and converting 'None' to ''
         """
         for key, value in data.items():
-        # If any fields pass validation with the string 'None', return a blank string
-            if value == 'None':
-                data[key] = ''
+            # If any fields pass validation with the string 'None', return a blank string
+            if value == "None":
+                data[key] = ""
         return data

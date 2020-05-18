@@ -129,7 +129,6 @@ AIRTABLE_IMPORT_SETTINGS = {
         'AIRTABLE_TABLE_NAME': 'xxx',
         'AIRTABLE_UNIQUE_IDENTIFIER': 'slug',
         'AIRTABLE_SERIALIZER': 'tests.serializers.SimplePageSerializer',
-        # TODO ADD ADJCENT SUPPORT
     },
     'tests.Advert': {
         'AIRTABLE_BASE_KEY': 'app_airtable_advert_base_key',

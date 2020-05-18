@@ -51,6 +51,7 @@ class BankNameSerializer(serializers.RelatedField):
 
     def to_internal_value(self, data):
         from .models import BankOrganisation
+
         if data:
             try:
                 bank = BankOrganisation.objects.get(name=data)
@@ -65,7 +66,6 @@ class BankNameSerializer(serializers.RelatedField):
 
 
 class DateSerializer(serializers.DateTimeField):
-
     def to_internal_value(self, date):
         if type(date) == str and len(date):
             date = parse_datetime(date).isoformat()

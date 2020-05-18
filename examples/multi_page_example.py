@@ -18,6 +18,7 @@ class BasePage(AirtableMixin, Page):
 
     Note: You'll most likely want BasePage to be an Abstract Model.
     """
+
     @classmethod
     def map_import_fields(cls, incoming_dict_fields={}):
         """
@@ -51,7 +52,9 @@ class BasePage(AirtableMixin, Page):
             "SEO Title": self.seo_title,
             "Title": self.title,
             "URL": self.full_url,
-            "Last Published": self.last_published_at.isoformat() if self.last_published_at else '',
+            "Last Published": self.last_published_at.isoformat()
+            if self.last_published_at
+            else "",
             "Meta Description": self.search_description,
             "Type": self.__class__.__name__,
             "Live": self.live,

@@ -12,7 +12,6 @@ from tests.models import Advert, ModelNotUsed, SimilarToAdvert, SimplePage
 from tests.serializers import AdvertSerializer
 
 
-# TODO: Add import tests
 class TestImportClass(TestCase):
     fixtures = ['test.json']
 

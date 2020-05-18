@@ -218,8 +218,6 @@ class TestAirtableMixin(TestCase):
         adjacent_models = advert._find_adjacent_models()
         self.assertEqual(adjacent_models, {})
 
-        # TODO add page support for adjacent models
-
     def test_save(self):
         advert = copy(self.advert)
         self.assertFalse(advert._ran_airtable_setup)

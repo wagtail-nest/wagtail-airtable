@@ -1,4 +1,3 @@
-import requests
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
@@ -20,25 +19,29 @@ class AirtableImportListing(TemplateView):
     """
 
     template_name = "wagtail_airtable/airtable_import_listing.html"
-    http_method_names = ['get', 'post']
+    http_method_names = ["get", "post"]
 
     def post(self, request, *args, **kwargs):
         form = AirtableImportModelForm(request.POST)
         if form.is_valid():
-            model_label = form.cleaned_data['model']
+            model_label = form.cleaned_data["model"]
             message = call_command("import_airtable", model_label, verbosity=1)
-            messages.add_message(request, messages.SUCCESS, f'Import succeeded with {message}')
+            messages.add_message(
+                request, messages.SUCCESS, f"Import succeeded with {message}"
+            )
         else:
-            messages.add_message(request, messages.ERROR, 'Could not import')
+            messages.add_message(request, messages.ERROR, "Could not import")
 
-        return redirect(reverse('airtable_import_listing'))
+        return redirect(reverse("airtable_import_listing"))
 
     def _get_model_for_path(self, model_path):
         """
         Given an 'app_name.model_name' string, return the model class
         """
-        app_label, model_name = model_path.split('.')
-        return ContentType.objects.get_by_natural_key(app_label, model_name).model_class()
+        app_label, model_name = model_path.split(".")
+        return ContentType.objects.get_by_natural_key(
+            app_label, model_name
+        ).model_class()
 
     def _get_base_model(self, model):
         """
@@ -58,34 +61,41 @@ class AirtableImportListing(TemplateView):
                 ('..', '..'),
             ]
         """
-        airtable_settings = getattr(settings, 'AIRTABLE_IMPORT_SETTINGS', {})
+        airtable_settings = getattr(settings, "AIRTABLE_IMPORT_SETTINGS", {})
         validated_models = []
 
         for label, model_settings in airtable_settings.items():
             if model_settings.get("AIRTABLE_IMPORT_ALLOWED", True):
                 label = label.lower()
-                if '.' in label:
+                if "." in label:
                     try:
                         model = self._get_model_for_path(label)
-                        validated_models.append((model._meta.verbose_name.title(), label, model))
+                        validated_models.append(
+                            (model._meta.verbose_name.title(), label, model)
+                        )
                     except ObjectDoesNotExist:
-                        raise CommandError("%r is not recognised as a model name." % label)
+                        raise CommandError(
+                            "%r is not recognised as a model name." % label
+                        )
 
                     # If there are extra supported models, verify each model is properly loaded
                     # in the settings. But do not add these to the `validated_models` list
                     if model_settings.get("EXTRA_SUPPORTED_MODELS"):
                         for model_path in model_settings.get("EXTRA_SUPPORTED_MODELS"):
                             model_path = model_path.lower()
-                            if '.' in model_path:
+                            if "." in model_path:
                                 try:
                                     _ = self._get_model_for_path(model_path)
                                 except ObjectDoesNotExist:
-                                    raise CommandError("%r is not recognised as a model name." % model_path)
+                                    raise CommandError(
+                                        "%r is not recognised as a model name."
+                                        % model_path
+                                    )
 
         return validated_models
 
     def get_context_data(self, **kwargs):
         """Add validated models from the AIRTABLE_IMPORT_SETTINGS to the context."""
         return {
-            'models': self.get_validated_models(),
+            "models": self.get_validated_models(),
         }

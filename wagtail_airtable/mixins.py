@@ -1,7 +1,5 @@
 import sys
-import json
 from ast import literal_eval
-from importlib import import_module
 from logging import getLogger
 
 from airtable import Airtable
@@ -16,7 +14,7 @@ from .tests import MockAirtable
 logger = getLogger(__name__)
 
 
-TESTING = any(x in ['test', 'runtests.py'] for x in sys.argv)
+TESTING = any(x in ["test", "runtests.py"] for x in sys.argv)
 
 
 class AirtableMixin(models.Model):
@@ -53,20 +51,26 @@ class AirtableMixin(models.Model):
             # Don't run this more than once on a model.
             self._ran_airtable_setup = True
 
-            if not hasattr(settings, 'AIRTABLE_IMPORT_SETTINGS') or not getattr(settings, "WAGTAIL_AIRTABLE_ENABLED", False):
+            if not hasattr(settings, "AIRTABLE_IMPORT_SETTINGS") or not getattr(
+                settings, "WAGTAIL_AIRTABLE_ENABLED", False
+            ):
                 # No AIRTABLE_IMPORT_SETTINGS were found. Skip checking for settings.
                 return None
 
             # Look for airtable settings. Default to an empty dict.
-            AIRTABLE_SETTINGS = settings.AIRTABLE_IMPORT_SETTINGS.get(self._meta.label, {})
+            AIRTABLE_SETTINGS = settings.AIRTABLE_IMPORT_SETTINGS.get(
+                self._meta.label, {}
+            )
             if not AIRTABLE_SETTINGS:
                 AIRTABLE_SETTINGS = self._find_adjacent_models()
 
             # Set the airtable settings.
-            self.AIRTABLE_BASE_KEY = AIRTABLE_SETTINGS.get('AIRTABLE_BASE_KEY')
-            self.AIRTABLE_TABLE_NAME = AIRTABLE_SETTINGS.get('AIRTABLE_TABLE_NAME')
-            self.AIRTABLE_UNIQUE_IDENTIFIER = AIRTABLE_SETTINGS.get('AIRTABLE_UNIQUE_IDENTIFIER')
-            self.AIRTABLE_SERIALIZER = AIRTABLE_SETTINGS.get('AIRTABLE_SERIALIZER')
+            self.AIRTABLE_BASE_KEY = AIRTABLE_SETTINGS.get("AIRTABLE_BASE_KEY")
+            self.AIRTABLE_TABLE_NAME = AIRTABLE_SETTINGS.get("AIRTABLE_TABLE_NAME")
+            self.AIRTABLE_UNIQUE_IDENTIFIER = AIRTABLE_SETTINGS.get(
+                "AIRTABLE_UNIQUE_IDENTIFIER"
+            )
+            self.AIRTABLE_SERIALIZER = AIRTABLE_SETTINGS.get("AIRTABLE_SERIALIZER")
             if (
                 AIRTABLE_SETTINGS
                 and settings.AIRTABLE_API_KEY
@@ -102,11 +106,11 @@ class AirtableMixin(models.Model):
         # and if it exists check to see if the current model is in the `EXTRA_SUPPORTED_MODELS` list
         for model_path, model_settings in settings.AIRTABLE_IMPORT_SETTINGS.items():
             # `EXTRA_SUPPORTED_MODELS` is an optional setting and may not exist.
-            if model_settings.get('EXTRA_SUPPORTED_MODELS'):
+            if model_settings.get("EXTRA_SUPPORTED_MODELS"):
                 # Always convert `EXTRA_SUPPORTED_MODELS` to a list for iteration.
                 # Then loop through every model in the list and covert it to lowercase
                 # so we can compare the current models label (lowercase) to a list of lowercased models
-                _list_of_models = list(model_settings.get('EXTRA_SUPPORTED_MODELS', []))
+                _list_of_models = list(model_settings.get("EXTRA_SUPPORTED_MODELS", []))
                 _extra_supported_models = [_model.lower() for _model in _list_of_models]
                 # Check that self._meta.label_lower is in the list of `EXTRA_SUPPORTED_MODELS`
                 # (all lowercased for proper string matching)
@@ -206,8 +210,9 @@ class AirtableMixin(models.Model):
         if type(self.AIRTABLE_UNIQUE_IDENTIFIER) == dict:
             keys = list(self.AIRTABLE_UNIQUE_IDENTIFIER.keys())
             values = list(self.AIRTABLE_UNIQUE_IDENTIFIER.values())
-            # TODO: Handle multiple dictionary keys
-            # TODO: Handle empty dictionary
+            # TODO: Edge case handling:
+            #       - Handle multiple dictionary keys
+            #       - Handle empty dictionary
             airtable_column_name = keys[0]
             model_field_name = values[0]
             value = getattr(self, model_field_name)
@@ -233,7 +238,8 @@ class AirtableMixin(models.Model):
         """Delete the @cached_property caching on self.mapped_export_fields."""
         try:
             del self.mapped_export_fields
-        except Exception as e:
+        except Exception:
+            # Doesn't matter what the error is.
             pass
 
     @classmethod
@@ -246,18 +252,18 @@ class AirtableMixin(models.Model):
 
         code = int(error.split(":", 1)[0].split(" ")[0])
         error_json = error.split("[Error: ")[1].rstrip("]")
-        if error_json == 'NOT_FOUND': # 404's act different
+        if error_json == "NOT_FOUND":  # 404's act different
             return {
-                'status_code': code,
-                'type': 'NOT_FOUND',
-                'message': 'Record not found',
+                "status_code": code,
+                "type": "NOT_FOUND",
+                "message": "Record not found",
             }
         else:
             error_info = literal_eval(error_json)
             return {
-                'status_code': code,
-                'type': error_info['type'],
-                'message': error_info['message'],
+                "status_code": code,
+                "type": error_info["type"],
+                "message": error_info["message"],
             }
 
     def save(self, *args, **kwargs):
@@ -276,7 +282,9 @@ class AirtableMixin(models.Model):
                     self.update_record()
                 except HTTPError as e:
                     error = self.parse_request_error(e.args[0])
-                    message = f"Could not update Airtable record. Reason: {error['message']}"
+                    message = (
+                        f"Could not update Airtable record. Reason: {error['message']}"
+                    )
                     logger.warning(message)
                     # Used in the `after_edit_page` hook. If it exists, an error message will be displayed.
                     self._airtable_update_error = message
@@ -287,7 +295,9 @@ class AirtableMixin(models.Model):
                     self.create_record()
                 except HTTPError as e:
                     error = self.parse_request_error(e.args[0])
-                    message = f"Could not create Airtable record. Reason: {error['message']}"
+                    message = (
+                        f"Could not create Airtable record. Reason: {error['message']}"
+                    )
                     logger.warning(message)
                     # Used in the `after_edit_page` hook. If it exists, an error message will be displayed.
                     self._airtable_update_error = message
