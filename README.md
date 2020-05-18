@@ -4,7 +4,7 @@ An extension for Wagtail allowing content to be transferred between Airtable she
 
 Developed by [Torchbox](https://torchbox.com/) and sponsored by [The Motley Fool](https://www.fool.com/).
 
-TODO: Create an animation demonstrating how it works.
+![Wagtail Airtable demo](examples/preview.gif)
 
 ### How it works
 
@@ -113,3 +113,8 @@ To help maintain proper data synchronisation between your Django/Wagtail instanc
 For example, if you have a BooleanField in a Django model (or Wagtail Page) and you want to support pushing that data to Airtable amd support importing that same data from Airtable, you should set the column type in Airtable to be a Checkbox (because it can only be on/off, much like how a BooleanField can only be True/False).
 
 In other cases such as Airtables Phone Number column type: if you are using a 3rd party package to handle phone numbers and phone number validation, you'll want to write a custom serializer to handle the incoming value from Airtable (when you import from Airtable). The data will likely come through to Wagtail as a string and you'll want to adjust the string value to be a proper phone number format for internal Wagtail/Django storage. (You may also need to convert the phone number to a standard string when exporting to Airtable as well)
+
+### Running Tests
+Clone the project and cd into the `wagtail-airtable/tests/` directory. Then run `python runtests.py tests`. This project is using standard Django unit tests.
+
+To target a specific test you can run `python runtests.py tests.test_file.TheTestClass.test_specific_model`
