@@ -20,6 +20,45 @@ class TestImportClass(TestCase):
             'verbosity': 2
         }
 
+    def get_valid_record_fields(self):
+        """Common used method for standard valid airtable records."""
+        return {
+            "Page Title": "Red! It's the new blue!",
+            "SEO Description": "Red is a scientifically proven...",
+            "External Link": "https://example.com/",
+            "Is Active": True,
+            "rating": "1.5",
+            "long_description": "<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veniam laboriosam consequatur saepe. Repellat itaque dolores neque, impedit reprehenderit eum culpa voluptates harum sapiente nesciunt ratione.</p>",
+            "points": 95,
+            "slug": "red-its-new-blue",
+        }
+
+    def get_valid_mapped_fields(self):
+        """Common used method for standard valid airtable mapped fields."""
+        return {
+            "Page Title": "title",
+            "SEO Description": "description",
+            "External Link": "external_link",
+            "Is Active": "is_active",
+            "slug": "slug",
+        }
+
+    def get_invalid_record_fields(self):
+        """Common used method for standard invalid airtable records."""
+        return {
+            "SEO Description": "Red is a scientifically proven...",
+            "External Link": "https://example.com/",
+            "slug": "red-its-new-blue",
+        }
+
+    def get_invalid_mapped_fields(self):
+        """Common used method for standard invalid airtable mapped fields."""
+        return {
+            "SEO Description": "description",
+            "External Link": "external_link",
+            "slug": "slug",
+        }
+
     def test_debug_message(self):
         models = ["fake.ModelName"]
         text = "Testing debug message with high verbosity"
@@ -157,27 +196,11 @@ class TestImportClass(TestCase):
 
     def test_convert_mapped_fields(self):
         importer = Importer()
-        record_fields_dict = {
-            "Page Title": "Red! It's the new blue!",
-            "SEO Description": "Red is a scientifically proven...",
-            "External Link": "https://example.com/",
-            "Is Active": True,
-            "rating": "1.5",
-            "long_description": "<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veniam laboriosam consequatur saepe. Repellat itaque dolores neque, impedit reprehenderit eum culpa voluptates harum sapiente nesciunt ratione.</p>",
-            "points": 95,
-            "slug": "red-its-new-blue",
-            "extra_field_from_airtable": "Not mapped",
-        }
-        mapped_fields_dict = {
-            "Page Title": "title",
-            "SEO Description": "description",
-            "External Link": "external_link",
-            "Is Active": "is_active",
-            "slug": "slug",
-        }
+        record_fields_dict = self.get_valid_record_fields()
+        record_fields_dict['extra_field_from_airtable'] = "Not mapped"
         mapped_fields = importer.convert_mapped_fields(
             record_fields_dict,
-            mapped_fields_dict,
+            self.get_valid_mapped_fields(),
         )
         # Ensure the new mapped fields have the proper django field keys
         # And that each value is the value from the airtable record.
@@ -196,16 +219,8 @@ class TestImportClass(TestCase):
     def test_update_object(self):
         importer = Importer(models=["tests.Advert"])
         advert_serializer = importer.get_model_serializer("tests.serializers.AdvertSerializer")
-        record_fields_dict = {
-            "Page Title": "Red! It's the new blue!",
-            "SEO Description": "Red is a scientifically proven...",
-            "External Link": "https://example.com/",
-            "Is Active": True,
-            "rating": "1.5",
-            "long_description": "<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veniam laboriosam consequatur saepe. Repellat itaque dolores neque, impedit reprehenderit eum culpa voluptates harum sapiente nesciunt ratione.</p>",
-            "points": 95,
-            "slug": "red-its-new-blue",
-        }
+        record_fields_dict = self.get_valid_record_fields()
+        record_fields_dict["SEO Description"] = "Red is a scientifically proven..."
         mapped_fields_dict = {
             "Page Title": "title",
             "SEO Description": "description",
@@ -215,7 +230,7 @@ class TestImportClass(TestCase):
         }
         mapped_fields = importer.convert_mapped_fields(
             record_fields_dict,
-            mapped_fields_dict,
+            self.get_valid_mapped_fields(),
         )
         # Ensure mapped_fields are mapped properly
         self.assertEqual(
@@ -249,11 +264,13 @@ class TestImportClass(TestCase):
             "SEO Description": "Red is a scientifically proven...",
             "External Link": "https://example.com/",
             "slug": "red-its-new-blue",
+            "Rating": "2.5",
         }
         mapped_fields_dict = {
             "SEO Description": "description",
             "External Link": "external_link",
             "slug": "slug",
+            "Rating": "rating",
         }
         mapped_fields = importer.convert_mapped_fields(
             record_fields_dict,
@@ -262,11 +279,8 @@ class TestImportClass(TestCase):
         serialized_data = advert_serializer(data=mapped_fields)
         is_valid = serialized_data.is_valid()
         self.assertFalse(is_valid)
-        with self.assertRaises(NameError) as context:
-            saved = importer.update_object(instance, 'recNewRecordId', serialized_data)
-            self.assertFalse(saved)
-        error_message = str(context.exception)
-        self.assertEqual(error_message, "name 'airtable_unique_identifier_column_name' is not defined")
+        saved = importer.update_object(instance, 'recNewRecordId', serialized_data)
+        self.assertFalse(saved)
 
     def test_update_object_by_uniq_col_name_missing_uniq_id(self):
         importer = Importer()
@@ -368,26 +382,9 @@ class TestImportClass(TestCase):
     def test_get_data_for_new_model_with_valid_serialized_data(self):
         importer = Importer(models=["tests.Advert"])
         advert_serializer = importer.get_model_serializer("tests.serializers.AdvertSerializer")
-        record_fields_dict = {
-            "Page Title": "Red! It's the new blue!",
-            "SEO Description": "Red is a scientifically proven...",
-            "External Link": "https://example.com/",
-            "Is Active": True,
-            "rating": "1.5",
-            "long_description": "<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veniam laboriosam consequatur saepe. Repellat itaque dolores neque, impedit reprehenderit eum culpa voluptates harum sapiente nesciunt ratione.</p>",
-            "points": 95,
-            "slug": "red-its-new-blue",
-        }
-        mapped_fields_dict = {
-            "Page Title": "title",
-            "SEO Description": "description",
-            "External Link": "external_link",
-            "Is Active": "is_active",
-            "slug": "slug",
-        }
         mapped_fields = importer.convert_mapped_fields(
-            record_fields_dict,
-            mapped_fields_dict,
+            self.get_valid_record_fields(),
+            self.get_valid_mapped_fields(),
         )
         # Check serialized data is valid
         serialized_data = advert_serializer(data=mapped_fields)
@@ -407,19 +404,10 @@ class TestImportClass(TestCase):
     def test_get_data_for_new_model_with_invalid_serialized_data(self):
         importer = Importer(models=["tests.Advert"])
         advert_serializer = importer.get_model_serializer("tests.serializers.AdvertSerializer")
-        record_fields_dict = {
-            "SEO Description": "Red is a scientifically proven...",
-            "External Link": "https://example.com/",
-            "slug": "red-its-new-blue",
-        }
-        mapped_fields_dict = {
-            "SEO Description": "description",
-            "External Link": "external_link",
-            "slug": "slug",
-        }
+
         mapped_fields = importer.convert_mapped_fields(
-            record_fields_dict,
-            mapped_fields_dict,
+            self.get_invalid_record_fields(),
+            self.get_invalid_mapped_fields(),
         )
         # Check serialized data is valid
         serialized_data = advert_serializer(data=mapped_fields)

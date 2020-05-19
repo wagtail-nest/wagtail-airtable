@@ -36,7 +36,8 @@ class Importer:
         Local function. Print debug messages if `verbosity` is 2 or higher.
         """
         if self.options["verbosity"] >= 2:
-            print(message)
+            if not TESTING:
+                print(message)
             return message
 
     def get_model_for_path(self, model_path):
