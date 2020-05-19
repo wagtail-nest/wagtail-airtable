@@ -33,8 +33,11 @@ This package will attempt to match a model object against row in Airtable using 
 
 ### Example Base Configuration
 
+Below is a base configuration or `ModelName` and `OtherModelName` (both are registered Wagtail snippets), along with `HomePage`.
+
 ```python
 # your settings.py
+AIRTABLE_API_KEY = 'yourSuperSecretKey'
 WAGTAIL_AIRTABLE_ENABLED = True
 AIRTABLE_IMPORT_SETTINGS = {
     'appname.ModelName': {
