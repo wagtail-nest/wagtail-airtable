@@ -531,9 +531,10 @@ class Command(BaseCommand):
         unrelated Airtable records to Django objects), and a serializer for validating
         incoming data from Airtable to make it work with the Django field types.
 
-        Each model loop also contains an `airtable.get_all()` command which
-        will get all the data from the Airtable spreadsheet and load it into a
-        list of dictionaries.
+        Each model loop contains an `airtable.get_all()` command which
+        will get all the data from the Airtable Table and load it into a
+        list of dictionaries. This uses memoization to reduce memory hogging and
+        wasted API calls to Airtable.
 
         Then every record is iterated over and 3 actions are taken:
             1. Look for an existing model object by its airtable_record_id.
