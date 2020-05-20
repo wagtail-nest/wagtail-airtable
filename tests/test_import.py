@@ -72,37 +72,6 @@ class TestImportClass(TestCase):
         debug_message = importer.debug_message(text)
         self.assertEqual(debug_message, None)
 
-    def test_get_validated_models_with_invalid_model(self):
-        models = ["fake.ModelName"]
-        importer = Importer(models=models)
-        with self.assertRaises(CommandError) as context:
-            importer.get_validated_models()
-        self.assertEqual("'fake.modelname' is not recognised as a model name.", str(context.exception))
-
-    def test_get_validated_models_with_single_valid_model(self):
-        models = ["tests.Advert"]
-        importer = Importer(models=models)
-        models = importer.get_validated_models()
-        # `SimilarToAdvert` is added because it's an EXTRA_SUPPORTED_MODEL for `Advert`
-        self.assertListEqual(models, [Advert])
-
-    def test_get_validated_models_with_multiple_valid_models(self):
-        models = ["tests.Advert", "tests.SimplePage", "tests.SimilarToAdvert"]
-        importer = Importer(models=models)
-        models = importer.get_validated_models()
-        # `SimilarToAdvert` is added because it's an EXTRA_SUPPORTED_MODEL for `Advert`
-        self.assertListEqual(models, [Advert, SimplePage, SimilarToAdvert])
-
-    def test_get_model_for_path(self):
-        importer = Importer(models=[])
-        advert_model = importer.get_model_for_path("tests.Advert")
-        self.assertEqual(advert_model, Advert)
-        simple_page = importer.get_model_for_path("tests.SimplePage")
-        self.assertEqual(simple_page, SimplePage)
-        with self.assertRaises(ObjectDoesNotExist) as context:
-            bad_model_path = importer.get_model_for_path("tests.BadModelPathName")
-        self.assertEqual("ContentType matching query does not exist.", str(context.exception))
-
     def test_get_model_serializer(self):
         importer = Importer(models=["tests.Advert"])
         advert_serializer = importer.get_model_serializer("tests.serializers.AdvertSerializer")
