@@ -11,6 +11,7 @@ from logging import getLogger
 from wagtail.core.models import Page
 
 from wagtail_airtable.tests import MockAirtable
+from wagtail_airtable.utils import get_model_for_path, get_validated_models
 
 logger = getLogger(__name__)
 
@@ -41,50 +42,14 @@ class Importer:
                 print(message)
             return message
 
-    def get_model_for_path(self, model_path):
-        """
-        Given an 'app_name.model_name' string, return the model class
-        """
-        model_path = model_path.lower()
-        app_label, model_name = model_path.split(".")
-        return ContentType.objects.get_by_natural_key(
-            app_label, model_name
-        ).model_class()
-
     def get_model_serializer(self, serializer_string):
         location, serializer_name = serializer_string.rsplit(".", 1)
         module = import_module(location)
         serializer_class = getattr(module, serializer_name)
         return serializer_class
 
-    def get_validated_models(self):
-        validated_models = []
-        for label in self.models:
-            label = label.lower()
-            if "." in label:
-                # interpret as a model
-                try:
-                    model = self.get_model_for_path(label)
-                except ObjectDoesNotExist:
-                    raise CommandError("%r is not recognised as a model name." % label)
-
-                validated_models.append(model)
-
-        models = validated_models[:]
-        for model in validated_models:
-            airtable_settings = settings.AIRTABLE_IMPORT_SETTINGS.get(
-                model._meta.label, {}
-            )
-            # Remove this model the the `models` list so it doesn't hit the Airtable API.
-            if not airtable_settings.get("AIRTABLE_IMPORT_ALLOWED", True):
-                models.remove(model)
-                continue
-
-        return models
-
     def get_model_settings(self, model) -> dict:
-        airtable_settings = settings.AIRTABLE_IMPORT_SETTINGS.get(model._meta.label, {})
-        return airtable_settings
+        return settings.AIRTABLE_IMPORT_SETTINGS.get(model._meta.label, {})
 
     def get_column_to_field_names(self, airtable_unique_identifier) -> tuple:
         uniq_id_type = type(airtable_unique_identifier)
@@ -348,7 +313,7 @@ class Importer:
 
     def run(self):
 
-        models = self.get_validated_models()
+        models = get_validated_models(models=self.models)
         self.debug_message(f"Validated models: {models}")
 
         # Used for re-using API data instead of making several of API request and waiting/spamming the Airtable API

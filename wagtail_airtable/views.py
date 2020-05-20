@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
-from django.core.management import CommandError, call_command
+from django.core.management import CommandError
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.generic import TemplateView
@@ -9,6 +9,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from logging import getLogger
 
 from wagtail_airtable.forms import AirtableImportModelForm
+from wagtail_airtable.utils import get_model_for_path
+
+from wagtail_airtable.management.commands.import_airtable import Importer
 
 logger = getLogger(__name__)
 
@@ -25,7 +28,9 @@ class AirtableImportListing(TemplateView):
         form = AirtableImportModelForm(request.POST)
         if form.is_valid():
             model_label = form.cleaned_data["model"]
-            message = call_command("import_airtable", model_label, verbosity=1)
+            importer = Importer(models=[model_label], options={'verbosity': 1})
+            importer.run()
+            message = f"{importer.created} items created. {importer.updated} items updated. {importer.skipped} items skipped."
             messages.add_message(
                 request, messages.SUCCESS, f"Import succeeded with {message}"
             )
@@ -33,15 +38,6 @@ class AirtableImportListing(TemplateView):
             messages.add_message(request, messages.ERROR, "Could not import")
 
         return redirect(reverse("airtable_import_listing"))
-
-    def _get_model_for_path(self, model_path):
-        """
-        Given an 'app_name.model_name' string, return the model class
-        """
-        app_label, model_name = model_path.split(".")
-        return ContentType.objects.get_by_natural_key(
-            app_label, model_name
-        ).model_class()
 
     def _get_base_model(self, model):
         """
@@ -66,10 +62,9 @@ class AirtableImportListing(TemplateView):
 
         for label, model_settings in airtable_settings.items():
             if model_settings.get("AIRTABLE_IMPORT_ALLOWED", True):
-                label = label.lower()
                 if "." in label:
                     try:
-                        model = self._get_model_for_path(label)
+                        model = get_model_for_path(label)
                         validated_models.append(
                             (model._meta.verbose_name.title(), label, model)
                         )
@@ -77,8 +72,16 @@ class AirtableImportListing(TemplateView):
                         raise CommandError(
                             "%r is not recognised as a model name." % label
                         )
+        models = validated_models[:]
+        for title, label, model in validated_models:
+            airtable_settings = settings.AIRTABLE_IMPORT_SETTINGS.get(
+                model._meta.label, {}
+            )
+            # Remove this model the the `models` list so it doesn't hit the Airtable API.
+            if not airtable_settings.get("AIRTABLE_IMPORT_ALLOWED", True):
+                models.remove(model)
 
-        return validated_models
+        return models
 
     def get_context_data(self, **kwargs):
         """Add validated models from the AIRTABLE_IMPORT_SETTINGS to the context."""
