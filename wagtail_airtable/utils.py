@@ -3,8 +3,7 @@ Utility functions for wagtail-airtable.
 """
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.management.base import CommandError
+from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 
 
 def get_model_for_path(model_path):
@@ -32,7 +31,7 @@ def get_all_models() -> list:
                     model = get_model_for_path(label)
                     validated_models.append(model)
                 except ObjectDoesNotExist:
-                    raise CommandError(
+                    raise ImproperlyConfigured(
                         "%r is not recognised as a model name." % label
                     )
 
@@ -54,7 +53,7 @@ def get_validated_models(models=[]) -> list:
             try:
                 model = get_model_for_path(label)
             except ObjectDoesNotExist:
-                raise CommandError("%r is not recognised as a model name." % label)
+                raise ImproperlyConfigured("%r is not recognised as a model name." % label)
 
             validated_models.append(model)
 

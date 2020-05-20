@@ -1,12 +1,10 @@
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.management.base import CommandError
+from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.test import TestCase
 
 from wagtail_airtable.utils import get_model_for_path, get_all_models, get_validated_models
 
 from tests.models import Advert, ModelNotUsed, SimilarToAdvert, SimplePage
 from tests.serializers import AdvertSerializer
-
 
 
 class TestUtilFunctions(TestCase):
@@ -32,7 +30,7 @@ class TestUtilFunctions(TestCase):
 
     def test_get_validated_models_with_invalid_model(self):
         models = ["fake.ModelName"]
-        with self.assertRaises(CommandError) as context:
+        with self.assertRaises(ImproperlyConfigured) as context:
             get_validated_models(models=models)
         self.assertEqual("'fake.ModelName' is not recognised as a model name.", str(context.exception))
 

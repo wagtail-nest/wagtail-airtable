@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
-from django.core.management import CommandError
+from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.generic import TemplateView
@@ -69,7 +69,7 @@ class AirtableImportListing(TemplateView):
                             (model._meta.verbose_name.title(), label, model)
                         )
                     except ObjectDoesNotExist:
-                        raise CommandError(
+                        raise ImproperlyConfigured(
                             "%r is not recognised as a model name." % label
                         )
         models = validated_models[:]
