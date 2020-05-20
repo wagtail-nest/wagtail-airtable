@@ -2,12 +2,14 @@ import sys
 from importlib import import_module
 
 from airtable import Airtable
+from django.db import models, IntegrityError
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
-from django.db import IntegrityError
 from django.core.management.base import BaseCommand
 from logging import getLogger
+from modelcluster.contrib.taggit import ClusterTaggableManager
+from taggit.managers import TaggableManager
 from wagtail.core.models import Page
 
 from wagtail_airtable.tests import MockAirtable
@@ -118,16 +120,22 @@ class Importer:
 
         Returns a bool that determines if the object was updated or not.
         """
-        if serialized_data.is_valid():
+
+        if serialized_data.is_valid() and record_id == 'recwTAuqvEn2np9qh':
             self.debug_message(
                 "\t\t Serializer data was valid. Setting attrs on model..."
             )
+            model = type(instance)
             for field_name, value in serialized_data.validated_data.items():
-                if field_name != "tags":
-                    setattr(instance, field_name, value)
+                field_type = type(model._meta.get_field(field_name)) # ie. django.db.models.fields.CharField
+                # If this field type is a subclass of a known Wagtail Tag, or a Django m2m field
+                # We need to loop through all the values and add them to the m2m-style field.
+                if issubclass(field_type, (TaggableManager, ClusterTaggableManager, models.ManyToManyField,)):
+                    m2m_field = getattr(instance, field_name)
+                    for m2m_value in value:
+                        m2m_field.add(m2m_value)
                 else:
-                    for tag in value:
-                        instance.tags.add(tag)
+                    setattr(instance, field_name, value)
             # When an object is saved it should NOT push its newly saved data back to Airtable.
             # This could theoretically cause a loop. By default this setting is True. But the
             # below line confirms it's false, just to be safe.
@@ -195,39 +203,43 @@ class Importer:
                 f"\t\t An Airtable record based on the unique identifier was found: {airtable_unique_identifier_field_name}"
             )
             try:
-                obj = model.objects.get(
+                instance = model.objects.get(
                     **{airtable_unique_identifier_field_name: unique_identifier}
                 )
                 self.debug_message(
                     f"\t\t Local object found by Airtable unique column name: {airtable_unique_identifier_field_name}"
                 )
             except model.DoesNotExist:
-                obj = None
+                instance = None
                 self.debug_message(
                     "\t\t No object was found based on the Airtable column name"
                 )
 
-            if obj:
+            if instance:
                 # A local model object was found by a unique identifier.
                 if serialized_data.is_valid():
                     for field_name, value in serialized_data.validated_data.items():
-                        if field_name != "tags":
-                            setattr(obj, field_name, value)
+                        field_type = type(model._meta.get_field(field_name)) # ie. django.db.models.fields.CharField
+                        # If this field type is a subclass of a known Wagtail Tag, or a Django m2m field
+                        # We need to loop through all the values and add them to the m2m-style field.
+                        if issubclass(field_type, (TaggableManager, ClusterTaggableManager, models.ManyToManyField,)):
+                            m2m_field = getattr(instance, field_name)
+                            for m2m_value in value:
+                                m2m_field.add(m2m_value)
                         else:
-                            for tag in value:
-                                obj.tags.add(tag)
+                            setattr(instance, field_name, value)
                     # When an object is saved it should NOT push its newly saved data back to Airtable.
                     # This could theoretically cause a loop. By default this setting is False. But the
                     # below line confirms it's false, just to be safe.
-                    obj.airtable_record_id = record_id
-                    obj.push_to_airtable = False
+                    instance.airtable_record_id = record_id
+                    instance.push_to_airtable = False
                     try:
                         if is_wagtail_model:
                             # Wagtail page. Requires a .save_revision()
-                            if not obj.locked:
+                            if not instance.locked:
                                 # Only save the page if the page is not locked
-                                obj.save()
-                                obj.save_revision()
+                                instance.save()
+                                instance.save_revision()
                                 self.updated = self.updated + 1
                             else:
                                 self.debug_message(
@@ -236,7 +248,7 @@ class Importer:
                                 self.skipped = self.skipped + 1
                         else:
                             # Django model. Save normally.
-                            obj.save()
+                            instance.save()
                             self.debug_message("\t\t\t Saved!")
                             self.updated = self.updated + 1
 
@@ -246,9 +258,9 @@ class Importer:
                         return True
                     except ValidationError as error:
                         error_message = "; ".join(error.messages)
-                        logger.error(f"Unable to save {obj}. Error(s): {error_message}")
+                        logger.error(f"Unable to save {instance}. Error(s): {error_message}")
                         self.debug_message(
-                            f"\t\t Unable to save {obj} (ID: {obj.pk}; Airtable Record ID: {record_id}). Reason: {error_message}"
+                            f"\t\t Unable to save {instance} (ID: {instance.pk}; Airtable Record ID: {record_id}). Reason: {error_message}"
                         )
                         self.skipped = self.skipped + 1
                 else:
