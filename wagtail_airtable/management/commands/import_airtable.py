@@ -57,26 +57,6 @@ class Importer:
         serializer_class = getattr(module, serializer_name)
         return serializer_class
 
-    def _find_parent_model(self, model_label) -> dict:
-        """
-        Loop through all the AIRTABLE_IMPORT_SETTINGS, and look for EXTRA_SUPPORTED_MODELS.
-
-        If there is an EXTRA_SUPPORTED_MODELS key, check if the current model is in the list of
-        models.
-
-        If the `model` is in the list of EXTRA_SUPPORTED_MODELS, return the parent dictionary.
-        """
-        return_settings = {}
-        for model_path, model_settings in settings.AIRTABLE_IMPORT_SETTINGS.items():
-            if model_settings.get("EXTRA_SUPPORTED_MODELS"):
-                models_lower = [
-                    x.lower() for x in model_settings.get("EXTRA_SUPPORTED_MODELS")
-                ]
-                if model_label.lower() in models_lower:
-                    return_settings = settings.AIRTABLE_IMPORT_SETTINGS[model_path]
-
-        return return_settings
-
     def get_validated_models(self):
         validated_models = []
         for label in self.models:
@@ -90,38 +70,20 @@ class Importer:
 
                 validated_models.append(model)
 
-        # Loop through each of the validated moels, and look for `EXTRA_SUPPORTED_MODELS`
         models = validated_models[:]
         for model in validated_models:
             airtable_settings = settings.AIRTABLE_IMPORT_SETTINGS.get(
                 model._meta.label, {}
             )
-            # If not allowed to import this model, don't allow EXTRA_SUPPORTED_MODELS either.
             # Remove this model the the `models` list so it doesn't hit the Airtable API.
             if not airtable_settings.get("AIRTABLE_IMPORT_ALLOWED", True):
                 models.remove(model)
                 continue
 
-            if airtable_settings.get("EXTRA_SUPPORTED_MODELS"):
-                for label in airtable_settings.get("EXTRA_SUPPORTED_MODELS"):
-                    label = label.lower()
-                    if "." in label:
-                        # interpret as a model
-                        try:
-                            model = self.get_model_for_path(label)
-                        except ObjectDoesNotExist:
-                            raise CommandError(
-                                "%r is not recognised as a model name." % label
-                            )
-
-                        models.append(model)
         return models
 
     def get_model_settings(self, model) -> dict:
         airtable_settings = settings.AIRTABLE_IMPORT_SETTINGS.get(model._meta.label, {})
-        if not airtable_settings:
-            # This could be an EXTRA_SUPPORTED_MODEL in which case we need to use its parent settings.
-            airtable_settings = self._find_parent_model(model._meta.label_lower)
         return airtable_settings
 
     def get_column_to_field_names(self, airtable_unique_identifier) -> tuple:
@@ -148,17 +110,23 @@ class Importer:
 
     def get_or_set_cached_records(self, airtable_client):
         # Memoize results from Airtable so we don't hit the same API multiple times
-        # This is largely used to support EXTRA_SUPPORTED_MODELS as they would use the
-        # same Airtable based as the key in the dictionary.
+        # This is largely used to support additional Wagtail/Airatble settings
+        # that are identical to each other, as in they would use the
+        # same Airtable Base as the key in the dictionary.
         #   ie.
         #   'yourapp.YourPage': {
         #       ...
         #       'AIRTABLE_TABLE_NAME': 'Your Table',
-        #       'EXTRA_SUPPORTED_MODELS': ['yourapp.Page2', 'yourapp.Page3']
+        #   },
+        #   'different_app.DifferentPage': {
+        #       ...
+        #       'AIRTABLE_TABLE_NAME': 'Your Table',  # Same Airtable Table name
         #   }
-        #   All of the above EXTRA_SUPPORTED_MODELS will use the 'Your Table' results
+        #   All of the above settings will use the 'Your Table' results
         #   instead of hitting the Airtable API for each model and getting the same
-        #   results every time
+        #   results every time. This is designed to help with API efficiency, reduce
+        #   load/import times, and to reduce how much memory is required to save all
+        #   the records from Airtable.
         if self.cached_records.get(airtable_client.table_name):
             all_records = self.cached_records.get(airtable_client.table_name)
         else:

@@ -12,10 +12,6 @@ class BasePage(AirtableMixin, Page):
     they will automatically inherit the import/export field mapping you see
     below.
 
-    When using multi model inheritance you can use the
-    optional `EXTRA_SUPPORTED_MODELS` setting. See settings.py for the
-    relevant settings
-
     Note: You'll most likely want BasePage to be an Abstract Model.
     """
 

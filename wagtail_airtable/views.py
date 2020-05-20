@@ -78,20 +78,6 @@ class AirtableImportListing(TemplateView):
                             "%r is not recognised as a model name." % label
                         )
 
-                    # If there are extra supported models, verify each model is properly loaded
-                    # in the settings. But do not add these to the `validated_models` list
-                    if model_settings.get("EXTRA_SUPPORTED_MODELS"):
-                        for model_path in model_settings.get("EXTRA_SUPPORTED_MODELS"):
-                            model_path = model_path.lower()
-                            if "." in model_path:
-                                try:
-                                    _ = self._get_model_for_path(model_path)
-                                except ObjectDoesNotExist:
-                                    raise CommandError(
-                                        "%r is not recognised as a model name."
-                                        % model_path
-                                    )
-
         return validated_models
 
     def get_context_data(self, **kwargs):

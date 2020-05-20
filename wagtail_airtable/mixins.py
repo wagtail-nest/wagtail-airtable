@@ -61,8 +61,6 @@ class AirtableMixin(models.Model):
             AIRTABLE_SETTINGS = settings.AIRTABLE_IMPORT_SETTINGS.get(
                 self._meta.label, {}
             )
-            if not AIRTABLE_SETTINGS:
-                AIRTABLE_SETTINGS = self._find_adjacent_models()
 
             # Set the airtable settings.
             self.AIRTABLE_BASE_KEY = AIRTABLE_SETTINGS.get("AIRTABLE_BASE_KEY")
@@ -98,25 +96,6 @@ class AirtableMixin(models.Model):
                     f"Airtable settings are not enabled for the {self._meta.verbose_name} "
                     f"({self._meta.model_name}) model"
                 )
-
-    def _find_adjacent_models(self) -> dict:
-        # If a base setting for a specified model or Page is not immediately found in the
-        # settings (ie. settings.AIRTABLE_IMPORT_SETTINGS keys)
-        # we will need to loop through each set of dictionaries, look for `EXTRA_SUPPORTED_MODELS`
-        # and if it exists check to see if the current model is in the `EXTRA_SUPPORTED_MODELS` list
-        for model_path, model_settings in settings.AIRTABLE_IMPORT_SETTINGS.items():
-            # `EXTRA_SUPPORTED_MODELS` is an optional setting and may not exist.
-            if model_settings.get("EXTRA_SUPPORTED_MODELS"):
-                # Always convert `EXTRA_SUPPORTED_MODELS` to a list for iteration.
-                # Then loop through every model in the list and covert it to lowercase
-                # so we can compare the current models label (lowercase) to a list of lowercased models
-                _list_of_models = list(model_settings.get("EXTRA_SUPPORTED_MODELS", []))
-                _extra_supported_models = [_model.lower() for _model in _list_of_models]
-                # Check that self._meta.label_lower is in the list of `EXTRA_SUPPORTED_MODELS`
-                # (all lowercased for proper string matching)
-                if self._meta.label_lower in _extra_supported_models:
-                    return settings.AIRTABLE_IMPORT_SETTINGS[model_path]
-        return {}
 
     @property
     def is_airtable_enabled(self):

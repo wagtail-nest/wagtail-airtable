@@ -212,12 +212,6 @@ class TestAirtableMixin(TestCase):
         self.assertTrue(advert._ran_airtable_setup)
         self.assertTrue(advert._is_enabled)
 
-    def test__find_adjacent_models(self):
-        advert = copy(self.advert)
-        advert.setup_airtable()
-        adjacent_models = advert._find_adjacent_models()
-        self.assertEqual(adjacent_models, {})
-
     def test_save(self):
         advert = copy(self.advert)
         self.assertFalse(advert._ran_airtable_setup)

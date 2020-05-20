@@ -17,14 +17,6 @@ class AirtableImportModelForm(forms.Form):
             if model_label == label.lower():
                 is_valid_model = True
                 break
-            # Check extra support models.
-            extra_support_models = [
-                model.lower()
-                for model in model_settings.get("EXTRA_SUPPORTED_MODELS", [])
-            ]
-            if model_label in extra_support_models:
-                is_valid_model = True
-                break
 
         if not is_valid_model:
             raise forms.ValidationError("You are importing an unsupported model")

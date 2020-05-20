@@ -84,10 +84,10 @@ class TestImportClass(TestCase):
         importer = Importer(models=models)
         models = importer.get_validated_models()
         # `SimilarToAdvert` is added because it's an EXTRA_SUPPORTED_MODEL for `Advert`
-        self.assertListEqual(models, [Advert, SimilarToAdvert])
+        self.assertListEqual(models, [Advert])
 
     def test_get_validated_models_with_multiple_valid_models(self):
-        models = ["tests.Advert", "tests.SimplePage"]
+        models = ["tests.Advert", "tests.SimplePage", "tests.SimilarToAdvert"]
         importer = Importer(models=models)
         models = importer.get_validated_models()
         # `SimilarToAdvert` is added because it's an EXTRA_SUPPORTED_MODEL for `Advert`
@@ -113,19 +113,6 @@ class TestImportClass(TestCase):
         with self.assertRaises(AttributeError) as context:
             advert_serializer = importer.get_model_serializer("tests.serializers.MissingSerializer")
         self.assertEqual("module 'tests.serializers' has no attribute 'MissingSerializer'", str(context.exception))
-
-    def test__find_parent_model(self):
-        importer = Importer(models=["tests.Advert"])
-
-        # Has parent settings
-        model_settings = importer._find_parent_model("tests.SimilarToAdvert")
-        self.assertEqual(type(model_settings), dict)
-        self.assertDictEqual(settings.AIRTABLE_IMPORT_SETTINGS['tests.Advert'], model_settings)
-
-        # Has no parent settings
-        model_settings = importer._find_parent_model("tests.MissingModelSetting")
-        self.assertEqual(type(model_settings), dict)
-        self.assertEqual(model_settings, {})
 
     def test_get_model_settings(self):
         importer = Importer()

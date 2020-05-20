@@ -1,4 +1,10 @@
 # AIRTABLE SETTINGS
+COMMON_AIRTABLE_SETTINGS = {
+    "AIRTABLE_BASE_KEY": "",
+    "AIRTABLE_TABLE_NAME": "Your Table Name",
+    "AIRTABLE_UNIQUE_IDENTIFIER": {"Wagtail Page ID": "pk",},
+    "AIRTABLE_SERIALIZER": "yourapp.serializers.YourPageSerializer",
+},
 WAGTAIL_AIRTABLE_ENABLED = True
 WAGTAIL_AIRTABLE_DEBUG = True
 AIRTABLE_IMPORT_SETTINGS = {
@@ -19,19 +25,10 @@ AIRTABLE_IMPORT_SETTINGS = {
         "AIRTABLE_SERIALIZER": "yourapp.serializers.YourPageSerializer",  # A custom serializer for validating imported data.
     },
     # Applies to multi_page_example.py
-    "yourapp.HomePage2": {
-        "AIRTABLE_BASE_KEY": "",
-        "AIRTABLE_TABLE_NAME": "Your Table Name",
-        "AIRTABLE_UNIQUE_IDENTIFIER": {"Wagtail Page ID": "pk",},
-        "AIRTABLE_SERIALIZER": "yourapp.serializers.YourPageSerializer",
-        # 👇 Optional setting. When `AirtableMixin` is applied to these models and these models are
-        # 👇 saved, they will be treated the same as yourapp.HomePage2 (declared on of line 22)
-        "EXTRA_SUPPORTED_MODELS": [
-            "yourapp.ContactPage",
-            "yourapp.BlogPage",
-            "yourapp.MiscPage",
-        ],
-    },
+    "yourapp.HomePage2": COMMON_AIRTABLE_SETTINGS,
+    "yourapp.ContactPage": COMMON_AIRTABLE_SETTINGS,
+    "yourapp.BlogPage": COMMON_AIRTABLE_SETTINGS,
+    "yourapp.MiscPage": COMMON_AIRTABLE_SETTINGS,
     # {
     #     ... More settings
     # }
