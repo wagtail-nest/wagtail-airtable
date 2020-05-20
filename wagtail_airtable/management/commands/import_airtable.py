@@ -121,7 +121,7 @@ class Importer:
         Returns a bool that determines if the object was updated or not.
         """
 
-        if serialized_data.is_valid() and record_id == 'recwTAuqvEn2np9qh':
+        if serialized_data.is_valid():
             self.debug_message(
                 "\t\t Serializer data was valid. Setting attrs on model..."
             )
