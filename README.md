@@ -8,14 +8,14 @@ Developed by [Torchbox](https://torchbox.com/) and sponsored by [The Motley Fool
 
 ### How it works
 
-When you setup a model to "map" to an Airtable sheet, everytime you save the model it will attempt to update the row in Airtable. If a row is not found, it will create a new row in your Airtable.
+When you setup a model to "map" to an Airtable sheet, every time you save the model it will attempt to update the row in Airtable. If a row is not found, it will create a new row in your Airtable.
 
-When you want to sync your Airtable data to your Wagtail website, you can go to `Settings -> Airtable Import`. You can then import entire tables into your Wagtail instance with the click of a button. If you see "_{Your Model}_ is not setup with the correct Airtable settings" you will need to double check your settings.
+When you want to sync your Airtable data to your Wagtail website, you can go to `Settings -> Airtable Import`. You can then import entire tables into your Wagtail instance with the click of a button. If you see "_{Your Model}_ is not setup with the correct Airtable settings" you will need to double check your settings. By default the import page can be found at http://yourwebsite.com/admin/airtable-import/, or if you use a custom /admin/ url it'll be http://yourwebsite.com/{custom_admin_url}/airtable-import/.
 
 ##### Behind the scenes...
 This package will attempt to match a model object against row in Airtable using a `record_id`. If a model does not have a record_id value, it will look for a match using the `AIRTABLE_UNIQUE_IDENTIFIER` to try and match a unique value in the Airtable to the unique value in your model. Should that succeed your model object will be "paired" with the row in Airtable. But should the record-search fail, a new row in Airtable will be created when you save your model, or a new model object will attempt to be created when you import a model from Airtable.
 
-> **Note**: Object creation _can_ fail when importing from Airtable. This is expected behaviour as an Airtable might not have all the data a model requires. For instance, a Wagtail Page uses Django Tree Beard and if a `path` is not in the model import settings (and a column in Airtable) a page cannot be created. Or if Airtable doesn't have a column for a required field on a Django Model, it won't be created.
+> **Note**: Object creation _can_ fail when importing from Airtable. This is expected behaviour as an Airtable might not have all the data a model requires. For instance, a Wagtail Page uses django-treebeard, with path as a required field. If the page model import settings do not include the path field, or a path column isn't present in Airtable, the page cannot be created. This same rule applies to other required fields on any Django model including other required fields on a Wagtail Page.
 
 ### Installation & Configuration
 
@@ -78,6 +78,26 @@ AIRTABLE_IMPORT_SETTINGS = {
 }
 ```
 
+In most cases using the `EXTRA_SUPPORTED_MODELS` setting might be overkill unless you have like 20+ similar models and don't want to flood your config with one-setting-per-model.
+
+However, the most common approach will likely be to support a handful of models, in which case using the below example would be faster and clearner.
+
+```python
+AIRTABLE_API_KEY = 'yourSuperSecretKey'
+WAGTAIL_AIRTABLE_ENABLED = True
+CUSTOM_PAGE_SETTINGS = {
+    'AIRTABLE_BASE_KEY': 'app3ds912jFam032S',
+    'AIRTABLE_TABLE_NAME': 'Your Airtable Table Name',
+    'AIRTABLE_UNIQUE_IDENTIFIER': 'slug', # Must match the Airtable Column name
+    'AIRTABLE_SERIALIZER': 'path.to.your.model.serializer.CustomModelSerializer'
+},
+AIRTABLE_IMPORT_SETTINGS = {
+    'home.HomePage': CUSTOM_PAGE_SETTINGS,
+    'blog.BlogPage': CUSTOM_PAGE_SETTINGS,
+    'appname.YourModel': CUSTOM_PAGE_SETTINGS,
+}
+```
+
 ### Extra Supported Models
 
 You might have a scenario where you want to push Wagtail Page data to a centralized Airtable base. Instead of specifying a new `AIRTABLE_IMPORT_SETTING` dictionary for _every_ page type, even though the import/export settings are going to be the exact same, you can instead specify the `EXTRA_SUPPORTED_MODELS` key with a `list()` of `appname.ModelName` items.
@@ -99,7 +119,7 @@ This command will look for any `appname.ModelName`s you provide it and use the m
 
 ### Local Testing Advice
 
-> **Note:** Careful not to use the production settings as you could overwrite Wagtail or Airtable data.
+> **Note:** Be careful not to use the production settings as you could overwrite Wagtail or Airtable data.
 
 Because Airtable doesn't provide a testing environment, you'll need to test against a live table. The best way to do this is to copy your live table to a new table (renaming it will help avoid naming confusion), and update your local settings. With this method, you can test to everything safely against a throw-away Airtable. Should something become broken beyond repair, delete the testing table and re-copy the original one.
 

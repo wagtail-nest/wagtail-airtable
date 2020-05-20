@@ -18,7 +18,7 @@ class HomePage(AirtableMixin, Page):
     )
 
     # Custom property or methods allowed when exporting
-    # There is no custom property/method support when import from Airtable because it won't know
+    # There is no custom property/method support when importing from Airtable because it won't know
     # where to map the data to since custom properties and methods are not stored fields.
     @property
     def top_rated_page(self):
@@ -27,14 +27,19 @@ class HomePage(AirtableMixin, Page):
         return False
 
     @classmethod
-    def map_import_fields(cls, incoming_dict_fields={}):
+    def map_import_fields(cls):
         """
         Maps your Airtable columns to your Django Model Fields.
 
         Always provide explicit field names as to not accidentally overwrite sensitive information
         such as model pk's.
 
-        Return a dictionary such as: {'Airtable column name': 'model_field_name', ...}
+        Return a dictionary such as:
+            {
+                'Name': 'title',
+                'Awesomeness Rating': 'total_awesomeness',
+                'Other Airtable Column Name': 'your_django_or_wagtail_field_name',
+            }
         """
         mappings = {
             # "Name" is the column name in Airtable. "title" (lowercase) is the field name on line 26.

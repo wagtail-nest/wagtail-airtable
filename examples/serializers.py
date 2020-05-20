@@ -104,5 +104,5 @@ class YourPageSerializer(AirtableSerializer):
     # Custom field we created on `class YourPage`.
     # We want Airtable to import and validate this data before updating the value.
     name = serializers.CharField(max_length=200, required=True)
-    # No supported because we don't want a slug to be overwritten.
+    # Not supported because we don't want a slug to be overwritten.
     # slug = serializers.CharField(max_length=200, required=True)

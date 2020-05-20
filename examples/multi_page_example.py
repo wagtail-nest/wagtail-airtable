@@ -20,7 +20,7 @@ class BasePage(AirtableMixin, Page):
     """
 
     @classmethod
-    def map_import_fields(cls, incoming_dict_fields={}):
+    def map_import_fields(cls):
         """
         Fields to update when importing a specific page.
         These are just updating the seo_title, title, and search_description

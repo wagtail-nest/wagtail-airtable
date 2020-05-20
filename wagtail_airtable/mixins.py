@@ -28,7 +28,7 @@ class AirtableMixin(models.Model):
     _is_enabled = False
     # If the Airtable api setup is complete in this model. Used for singleton-like setup_airtable() method.
     _ran_airtable_setup = False
-    # Upon save, should this models data be sent to Airtable?
+    # Upon save, should this model's data be sent to Airtable?
     # This is an internal variable. Both _push_to_airtable and push_to_airtable needs to be True
     # before a push to Airtable will happen.
     # _push_to_airtable is for internal use only
@@ -157,9 +157,16 @@ class AirtableMixin(models.Model):
         """
         Create or update a record.
 
-        Because a new Airtable record might already exist in Airtable,
-        this method will need to attempt to match a unique record by a unique value in an Airtable column.
-        If a value is found in Airtable, use that records ID and update that column.
+        The create_record() method will look for an Airtable match before trying
+        to create a new Airtable record (that comes with a new airtable_record_id).
+
+        This function needs to check for a matched record in Airtable first just in case
+        some data became out of sync, or one person worked in Airtable and one worked in
+        Wagtail. The idea here is to marry those records whenever possible instead of
+        duplicating Airtable records.
+
+        If a record in Airtable exists, update this object with the found record_id. (Prevent record duplication)
+        But if a record is NOT found in Airtable, create a new record.
         """
         matched_record = self.match_record()
         if matched_record:
@@ -171,7 +178,12 @@ class AirtableMixin(models.Model):
         return record
 
     def check_record_exists(self, airtable_record_id) -> bool:
-        """Check if a record exists in an Airtable."""
+        """
+        Check if a record exists in an Airtable by its exact Airtable Record ID.
+
+        This will trigger an Airtable API request.
+        Returns a True/False response.
+        """
         try:
             record = self.client.get(airtable_record_id)
         except HTTPError:
@@ -182,8 +194,12 @@ class AirtableMixin(models.Model):
         """
         Update a record.
 
-        If a record exists, it will update it.
-        If a record does not exist, it will call self.create_record()
+        Before updating a record this will check to see if a record even exists
+        in Airtable. If a record is not found using its Airtable record_id it cannot
+        be updated and may throw an unexpected error.
+
+        If a record DOES exist based on its Airtable record_id, we can update that particular row.
+        If a record does NOT exist in Airtable, a new record will need to be created.
         """
         airtable_record_id = airtable_record_id or self.airtable_record_id
         if self.check_record_exists(airtable_record_id):
@@ -197,7 +213,11 @@ class AirtableMixin(models.Model):
         return record
 
     def delete_record(self) -> bool:
-        """Delete a record. Return True/False."""
+        """
+        Deletes a record from Airtable, but does not delete the object from Django.
+
+        Returns True if the record is successfully deleted, otherwise False.
+        """
         try:
             response = self.client.delete(self.airtable_record_id)
             deleted = response["deleted"]
@@ -206,7 +226,20 @@ class AirtableMixin(models.Model):
         return deleted
 
     def match_record(self) -> str:
-        """Look for a record in an Airtable. Search by the AIRTABLE_UNIQUE_IDENTIFIER."""
+        """
+        Look for a record in an Airtable. Search by the AIRTABLE_UNIQUE_IDENTIFIER.
+
+        Instead of looking for an Airtable record by it's exact Record ID, it will
+        search through the specified Airtable column for a specific value.
+
+        WARNING: If more than one record is found, the first one in the returned
+        list of records (a list of dicts) will be used.
+
+        This differs from check_record_exists() as this will return the record string
+        (or an empty string if a record is not found), whereas check_record_exists()
+        will return a True/False boolean to let you know if a record simply exists,
+        or doesn't exist.
+        """
         if type(self.AIRTABLE_UNIQUE_IDENTIFIER) == dict:
             keys = list(self.AIRTABLE_UNIQUE_IDENTIFIER.keys())
             values = list(self.AIRTABLE_UNIQUE_IDENTIFIER.values())

@@ -8,6 +8,7 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import IntegrityError
 from django.core.management.base import BaseCommand, CommandError
 from logging import getLogger
+from wagtail.core.models import Page
 
 from wagtail_airtable.tests import MockAirtable
 
@@ -119,7 +120,7 @@ class Importer:
     def get_model_settings(self, model) -> dict:
         airtable_settings = settings.AIRTABLE_IMPORT_SETTINGS.get(model._meta.label, {})
         if not airtable_settings:
-            # This could be an EXTRA_SUPPORTED_MODEL in which case we need to use it's parent settings.
+            # This could be an EXTRA_SUPPORTED_MODEL in which case we need to use its parent settings.
             airtable_settings = self._find_parent_model(model._meta.label_lower)
         return airtable_settings
 
@@ -341,7 +342,7 @@ class Importer:
         return False
 
     def is_wagtail_page(self, model):
-        if hasattr(model, "depth"):
+        if issubclass(model, Page):
             logger.info(f"{model._meta.verbose_name} cannot be created from an import.")
             self.debug_message(
                 f"\t\t {model._meta.verbose_name} is a Wagtail Page and cannot be created from an import."
@@ -362,7 +363,7 @@ class Importer:
             data_for_new_model = mapped_import_fields
         data_for_new_model["airtable_record_id"] = record_id
 
-        # First things first, remove any "pk" or "id" items form the mapped_import_fields
+        # First things first, remove any "pk" or "id" items from the mapped_import_fields
         # This will let Django and Wagtail handle the PK on its own, as it should.
         # When the model is saved it'll trigger a push to Airtable and automatically update
         # the necessary column with the new PK so it's always accurate.
@@ -389,7 +390,7 @@ class Importer:
         for model in models:
             self.debug_message(f"IMPORTING MODEL: {model}")
             # Wagtail models require a .save_revision() call when being saved.
-            is_wagtail_model = hasattr(model, "depth")
+            is_wagtail_model = issubclass(model, Page)
             # Airtable global settings.
             airtable_settings = self.get_model_settings(model)
 
@@ -458,7 +459,7 @@ class Importer:
                 serialized_data = model_serializer(data=mapped_import_fields)
                 serialized_data.is_valid()
 
-                # Look for a record by it's airtable_record_id.
+                # Look for a record by its airtable_record_id.
                 # If it exists, update the data.
                 self.debug_message(
                     f"\n\t Looking for existing object with record: {record_id}"
@@ -584,13 +585,13 @@ class Command(BaseCommand):
         exist.
 
         Every model is then looped through, and a `settings.AIRTABLE_IMPORT_SETTINGS`
-        is searched for based on the models label (ie. pages.HomePage). These
+        is searched for based on the model's label (ie. pages.HomePage). These
         settings are used to connect to a certain Airtable Base (a set of spreadsheets),
         the name of the table to use, a unique identifier (used for connecting previously
         unrelated Airtable records to Django objects), and a serializer for validating
         incoming data from Airtable to make it work with the Django field types.
 
-        Within each model loop also contains an `airtable.get_all()` command which
+        Each model loop also contains an `airtable.get_all()` command which
         will get all the data from the Airtable spreadsheet and load it into a
         list of dictionaries.
 

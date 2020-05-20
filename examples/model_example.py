@@ -9,7 +9,7 @@ class YourModel(AirtableMixin, models.Model):
     slug = models.SlugField(max_length=200, unique=True, editable=True)
 
     @classmethod
-    def map_import_fields(cls, incoming_dict_fields={}):
+    def map_import_fields(cls):
         """
         Maps your Airtable columns to your Django Model Fields.
 
