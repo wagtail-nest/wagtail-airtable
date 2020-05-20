@@ -489,12 +489,7 @@ class Importer:
                 # Note: this may fail if there isn't enough data in the Airtable record.
                 try:
                     self.debug_message("\t\t Attempting to create a new object...")
-                    # NOTE: model.objects.create(**data_for_new_model) always throws an
-                    # IntegrityError saying the UNIQUE constraint on `id` is the problem.
-                    # Use a for loop and setting the fields one-by-one is a work around that.
-                    new_model = model()
-                    for field_name, value in data_for_new_model.items():
-                        setattr(new_model, field_name, value)
+                    new_model = model(**data_for_new_model)
                     new_model.save()
                     self.debug_message("\t\t Object created")
                     self.created = self.created + 1
