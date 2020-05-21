@@ -23,7 +23,7 @@ def register_airtable_url():
 @hooks.register("register_settings_menu_item")
 def register_airtable_setting():
     def is_shown(request):
-        return settings.WAGTAIL_AIRTABLE_ENABLED
+        return getattr(settings, 'WAGTAIL_AIRTABLE_ENABLED', False)
 
     menu_item = MenuItem(
         "Airtable Import",
