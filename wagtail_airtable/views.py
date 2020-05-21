@@ -58,30 +58,60 @@ class AirtableImportListing(TemplateView):
             ]
         """
         airtable_settings = getattr(settings, "AIRTABLE_IMPORT_SETTINGS", {})
-        validated_models = []
 
+        # Loop through all the models in the settings and create a new dict
+        # of the unique settings for each model label.
+        # If settings were used more than once the second (3rd, 4th, etc) common settings
+        # will be bulked into a "grouped_models" list.
+        tracked_settings = []
+        models = {}
         for label, model_settings in airtable_settings.items():
+            if model_settings not in tracked_settings:
+                tracked_settings.append(model_settings)
+                models[label] = model_settings
+                models[label]['grouped_models'] = []
+            else:
+                for label2, model_settings2 in models.items():
+                    if model_settings is model_settings2:
+                        models[label2]['grouped_models'].append(label)
+
+        # Validated models are models that actually exist.
+        # This way fake models can't be added.
+        validated_models = []
+        for label, model_settings in models.items():
+            # If this model is allowed to be imported. Default is True.
             if model_settings.get("AIRTABLE_IMPORT_ALLOWED", True):
+                # A temporary variable for holding grouped model names.
+                # This is added to the validated_models item later.
+                # This is only used for displaying model names in the import template
+                _grouped_models = []
+                # Loop through the grouped_models list in each setting, validate each model,
+                # then add it to the larger grouped_models
+                if model_settings.get("grouped_models"):
+                    for grouped_model_label in model_settings.get("grouped_models"):
+                        if "." in grouped_model_label:
+                            try:
+                                model = get_model_for_path(grouped_model_label)
+                                _grouped_models.append(model._meta.verbose_name_plural)
+                            except ObjectDoesNotExist:
+                                raise ImproperlyConfigured(
+                                    "%r is not recognised as a model name." % label
+                                )
+
                 if "." in label:
                     try:
                         model = get_model_for_path(label)
+                        # Append a triple-tuple to the validated_models with the:
+                        # (1. Models verbose name, 2. Model label, 3. is_airtable_enabled from the model, and 4. List of grouped models)
                         validated_models.append(
-                            (model._meta.verbose_name.title(), label, model)
+                            (model._meta.verbose_name_plural, label, model.is_airtable_enabled, _grouped_models)
                         )
                     except ObjectDoesNotExist:
                         raise ImproperlyConfigured(
                             "%r is not recognised as a model name." % label
                         )
-        models = validated_models[:]
-        for title, label, model in validated_models:
-            airtable_settings = settings.AIRTABLE_IMPORT_SETTINGS.get(
-                model._meta.label, {}
-            )
-            # Remove this model the the `models` list so it doesn't hit the Airtable API.
-            if not airtable_settings.get("AIRTABLE_IMPORT_ALLOWED", True):
-                models.remove(model)
 
-        return models
+        return validated_models
 
     def get_context_data(self, **kwargs):
         """Add validated models from the AIRTABLE_IMPORT_SETTINGS to the context."""
