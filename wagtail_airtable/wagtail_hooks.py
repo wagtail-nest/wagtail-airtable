@@ -38,7 +38,7 @@ def register_airtable_setting():
 @hooks.register("after_edit_page")
 def after_page_update(request, page):
     # Check if the page is an AirtableMixin Subclass
-    watail_airtable_enabled getattr(settings, 'WAGTAIL_AIRTABLE_ENABLED', False)
+    watail_airtable_enabled = getattr(settings, 'WAGTAIL_AIRTABLE_ENABLED', False)
     if watail_airtable_enabled and issubclass(page.__class__, AirtableMixin):
         # When AirtableMixin.save() is called..
         # Either it'll connect with Airtable and update the row as expected, or
@@ -55,7 +55,7 @@ def after_page_update(request, page):
 
 @hooks.register("after_edit_snippet")
 def after_snippet_update(request, instance):
-    watail_airtable_enabled getattr(settings, 'WAGTAIL_AIRTABLE_ENABLED', False)
+    watail_airtable_enabled = getattr(settings, 'WAGTAIL_AIRTABLE_ENABLED', False)
     if watail_airtable_enabled and issubclass(instance.__class__, AirtableMixin):
         # When AirtableMixin.save() is called..
         # Either it'll connect with Airtable and update the row as expected, or
