@@ -28,7 +28,7 @@ class AirtableImportListing(TemplateView):
         form = AirtableImportModelForm(request.POST)
         if form.is_valid():
             model_label = form.cleaned_data["model"]
-            importer = Importer(models=[model_label], options={'verbosity': 1})
+            importer = Importer(models=[model_label], options={"verbosity": 1})
             importer.run()
             message = f"{importer.created} items created. {importer.updated} items updated. {importer.skipped} items skipped."
             messages.add_message(
@@ -69,11 +69,11 @@ class AirtableImportListing(TemplateView):
             if model_settings not in tracked_settings:
                 tracked_settings.append(model_settings)
                 models[label] = model_settings
-                models[label]['grouped_models'] = []
+                models[label]["grouped_models"] = []
             else:
                 for label2, model_settings2 in models.items():
                     if model_settings is model_settings2:
-                        models[label2]['grouped_models'].append(label)
+                        models[label2]["grouped_models"].append(label)
 
         # Validated models are models that actually exist.
         # This way fake models can't be added.
@@ -99,9 +99,16 @@ class AirtableImportListing(TemplateView):
                     if model:
                         # Append a triple-tuple to the validated_models with the:
                         # (1. Models verbose name, 2. Model label, 3. is_airtable_enabled from the model, and 4. List of grouped models)
-                        airtable_enabled_for_model = getattr(model, 'is_airtable_enabled', False)
+                        airtable_enabled_for_model = getattr(
+                            model, "is_airtable_enabled", False
+                        )
                         validated_models.append(
-                            (model._meta.verbose_name_plural, label, airtable_enabled_for_model, _grouped_models)
+                            (
+                                model._meta.verbose_name_plural,
+                                label,
+                                airtable_enabled_for_model,
+                                _grouped_models,
+                            )
                         )
                     else:
                         raise ImproperlyConfigured(

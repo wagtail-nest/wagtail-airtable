@@ -57,15 +57,15 @@ def get_validated_models(models=[]) -> list:
             # interpret as a model
             model = get_model_for_path(label)
             if not model:
-                raise ImproperlyConfigured("%r is not recognised as a model name." % label)
+                raise ImproperlyConfigured(
+                    "%r is not recognised as a model name." % label
+                )
 
             validated_models.append(model)
 
     models = validated_models[:]
     for model in validated_models:
-        airtable_settings = settings.AIRTABLE_IMPORT_SETTINGS.get(
-            model._meta.label, {}
-        )
+        airtable_settings = settings.AIRTABLE_IMPORT_SETTINGS.get(model._meta.label, {})
         # Remove this model from the `models` list so it doesn't hit the Airtable API.
         if not airtable_settings.get("AIRTABLE_IMPORT_ALLOWED", True):
             models.remove(model)

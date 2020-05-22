@@ -16,5 +16,5 @@ class AirtableSerializer(serializers.Serializer):
         for key, value in data.items():
             # If any fields pass validation with the string 'None', return a blank string
             if value == "None":
-                data[key] = ''
+                data[key] = ""
         return data

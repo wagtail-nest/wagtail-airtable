@@ -127,10 +127,15 @@ class Importer:
             )
             model = type(instance)
             for field_name, value in serialized_data.validated_data.items():
-                field_type = type(model._meta.get_field(field_name))  # ie. django.db.models.fields.CharField
+                field_type = type(
+                    model._meta.get_field(field_name)
+                )  # ie. django.db.models.fields.CharField
                 # If this field type is a subclass of a known Wagtail Tag, or a Django m2m field
                 # We need to loop through all the values and add them to the m2m-style field.
-                if issubclass(field_type, (TaggableManager, ClusterTaggableManager, models.ManyToManyField,)):
+                if issubclass(
+                    field_type,
+                    (TaggableManager, ClusterTaggableManager, models.ManyToManyField,),
+                ):
                     m2m_field = getattr(instance, field_name)
                     for m2m_value in value:
                         m2m_field.add(m2m_value)
@@ -219,10 +224,19 @@ class Importer:
                 # A local model object was found by a unique identifier.
                 if serialized_data.is_valid():
                     for field_name, value in serialized_data.validated_data.items():
-                        field_type = type(model._meta.get_field(field_name))  # ie. django.db.models.fields.CharField
+                        field_type = type(
+                            model._meta.get_field(field_name)
+                        )  # ie. django.db.models.fields.CharField
                         # If this field type is a subclass of a known Wagtail Tag, or a Django m2m field
                         # We need to loop through all the values and add them to the m2m-style field.
-                        if issubclass(field_type, (TaggableManager, ClusterTaggableManager, models.ManyToManyField,)):
+                        if issubclass(
+                            field_type,
+                            (
+                                TaggableManager,
+                                ClusterTaggableManager,
+                                models.ManyToManyField,
+                            ),
+                        ):
                             m2m_field = getattr(instance, field_name)
                             for m2m_value in value:
                                 m2m_field.add(m2m_value)
@@ -258,7 +272,9 @@ class Importer:
                         return True
                     except ValidationError as error:
                         error_message = "; ".join(error.messages)
-                        logger.error(f"Unable to save {instance}. Error(s): {error_message}")
+                        logger.error(
+                            f"Unable to save {instance}. Error(s): {error_message}"
+                        )
                         self.debug_message(
                             f"\t\t Unable to save {instance} (ID: {instance.pk}; Airtable Record ID: {record_id}). Reason: {error_message}"
                         )
