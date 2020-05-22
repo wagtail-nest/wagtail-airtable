@@ -1,8 +1,8 @@
 from django.conf import settings
 from django.conf.urls import url
-from django.contrib import messages
 from django.urls import reverse
 from wagtail.core import hooks
+from wagtail.admin import messages
 from wagtail.admin.menu import MenuItem
 
 from wagtail_airtable.views import AirtableImportListing
@@ -48,13 +48,14 @@ def after_page_update(request, page):
         # Otherwise assume a successful update happened on the Airtable row
         if hasattr(page, "is_airtable_enabled") and page.is_airtable_enabled:
             if hasattr(page, "_airtable_update_error"):
-                messages.add_message(
-                    request, messages.ERROR, page._airtable_update_error
-                )
+                messages.error(request, message=instance._airtable_update_error)
             else:
-                messages.add_message(
-                    request, messages.SUCCESS, "Airtable record updated"
-                )
+                buttons = None
+                if instance.get_record_usage_url():
+                    buttons = [
+                        messages.button(instance.get_record_usage_url(), 'View record in Airtable', True)
+                    ]
+                messages.success(request, message="Airtable record updated", buttons=buttons)
 
 
 @hooks.register("after_edit_snippet")
@@ -69,10 +70,11 @@ def after_snippet_update(request, instance):
         # Otherwise assume a successful update happened on the Airtable row
         if hasattr(instance, "is_airtable_enabled") and instance.is_airtable_enabled:
             if hasattr(instance, "_airtable_update_error"):
-                messages.add_message(
-                    request, messages.ERROR, instance._airtable_update_error
-                )
+                messages.error(request, message=instance._airtable_update_error)
             else:
-                messages.add_message(
-                    request, messages.SUCCESS, "Airtable record updated"
-                )
+                buttons = None
+                if instance.get_record_usage_url():
+                    buttons = [
+                        messages.button(instance.get_record_usage_url(), 'View record in Airtable', True)
+                    ]
+                messages.success(request, message="Airtable record updated", buttons=buttons)

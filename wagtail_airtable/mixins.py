@@ -62,6 +62,7 @@ class AirtableMixin(models.Model):
                 self._meta.label, {}
             )
 
+            self.AIRTABLE_BASE_URL = AIRTABLE_SETTINGS.get("AIRTABLE_BASE_URL", None)
             # Set the airtable settings.
             self.AIRTABLE_BASE_KEY = AIRTABLE_SETTINGS.get("AIRTABLE_BASE_KEY")
             self.AIRTABLE_TABLE_NAME = AIRTABLE_SETTINGS.get("AIRTABLE_TABLE_NAME")
@@ -96,6 +97,12 @@ class AirtableMixin(models.Model):
                     f"Airtable settings are not enabled for the {self._meta.verbose_name} "
                     f"({self._meta.model_name}) model"
                 )
+
+    def get_record_usage_url(self):
+        if self.AIRTABLE_BASE_URL:
+            url = self.AIRTABLE_BASE_URL.rstrip('/')
+            return f"{url}/{self.airtable_record_id}"
+        return None
 
     @property
     def is_airtable_enabled(self):
