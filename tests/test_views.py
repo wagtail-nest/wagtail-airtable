@@ -11,8 +11,8 @@ class TestAdminViews(TestCase):
         response = self.client.get('/admin/airtable-import/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Models you can import from Airtable')
-        self.assertContains(response, 'Simple Page')
         self.assertContains(response, 'Advert')
+        self.assertNotContains(response, 'Simple Page')
 
     def test_list_snippets(self):
         response = self.client.get('/admin/snippets/tests/advert/')

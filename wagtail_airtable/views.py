@@ -90,23 +90,20 @@ class AirtableImportListing(TemplateView):
                 if model_settings.get("grouped_models"):
                     for grouped_model_label in model_settings.get("grouped_models"):
                         if "." in grouped_model_label:
-                            try:
-                                model = get_model_for_path(grouped_model_label)
+                            model = get_model_for_path(grouped_model_label)
+                            if model:
                                 _grouped_models.append(model._meta.verbose_name_plural)
-                            except ObjectDoesNotExist:
-                                raise ImproperlyConfigured(
-                                    "%r is not recognised as a model name." % label
-                                )
 
                 if "." in label:
-                    try:
-                        model = get_model_for_path(label)
+                    model = get_model_for_path(label)
+                    if model:
                         # Append a triple-tuple to the validated_models with the:
                         # (1. Models verbose name, 2. Model label, 3. is_airtable_enabled from the model, and 4. List of grouped models)
+                        airtable_enabled_for_model = getattr(model, 'is_airtable_enabled', False)
                         validated_models.append(
-                            (model._meta.verbose_name_plural, label, model.is_airtable_enabled, _grouped_models)
+                            (model._meta.verbose_name_plural, label, airtable_enabled_for_model, _grouped_models)
                         )
-                    except ObjectDoesNotExist:
+                    else:
                         raise ImproperlyConfigured(
                             "%r is not recognised as a model name." % label
                         )
@@ -115,6 +112,4 @@ class AirtableImportListing(TemplateView):
 
     def get_context_data(self, **kwargs):
         """Add validated models from the AIRTABLE_IMPORT_SETTINGS to the context."""
-        return {
-            "models": self.get_validated_models(),
-        }
+        return {"models": self.get_validated_models()}

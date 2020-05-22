@@ -7,7 +7,6 @@ from wagtail_airtable.utils import get_all_models
 class Command(BaseCommand):
     help = "Looks through every available model in the AIRTABLE_IMPORT_SETTINGS and unsets the `airtable_record_id`"
 
-
     def handle(self, *args, **options):
         """
         Gets all the models set in AIRTABLE_IMPORT_SETTINGS, loops through them, and set `airtable_record_id=''` to every one.

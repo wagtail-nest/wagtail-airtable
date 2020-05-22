@@ -127,7 +127,7 @@ class Importer:
             )
             model = type(instance)
             for field_name, value in serialized_data.validated_data.items():
-                field_type = type(model._meta.get_field(field_name)) # ie. django.db.models.fields.CharField
+                field_type = type(model._meta.get_field(field_name))  # ie. django.db.models.fields.CharField
                 # If this field type is a subclass of a known Wagtail Tag, or a Django m2m field
                 # We need to loop through all the values and add them to the m2m-style field.
                 if issubclass(field_type, (TaggableManager, ClusterTaggableManager, models.ManyToManyField,)):
@@ -219,7 +219,7 @@ class Importer:
                 # A local model object was found by a unique identifier.
                 if serialized_data.is_valid():
                     for field_name, value in serialized_data.validated_data.items():
-                        field_type = type(model._meta.get_field(field_name)) # ie. django.db.models.fields.CharField
+                        field_type = type(model._meta.get_field(field_name))  # ie. django.db.models.fields.CharField
                         # If this field type is a subclass of a known Wagtail Tag, or a Django m2m field
                         # We need to loop through all the values and add them to the m2m-style field.
                         if issubclass(field_type, (TaggableManager, ClusterTaggableManager, models.ManyToManyField,)):

@@ -14,9 +14,8 @@ class TestUtilFunctions(TestCase):
         self.assertEqual(advert_model, Advert)
         simple_page = get_model_for_path("tests.SimplePage")
         self.assertEqual(simple_page, SimplePage)
-        with self.assertRaises(ObjectDoesNotExist) as context:
-            bad_model_path = get_model_for_path("tests.BadModelPathName")
-        self.assertEqual("ContentType matching query does not exist.", str(context.exception))
+        bad_model_path = get_model_for_path("tests.BadModelPathName")
+        self.assertFalse(bad_model_path)
 
     def test_get_validated_models_with_single_valid_model(self):
         models = ["tests.Advert"]

@@ -8,16 +8,20 @@ from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 
 def get_model_for_path(model_path):
     """
-    Given an 'app_name.model_name' string, return the model class
+    Given an 'app_name.model_name' string, return the model class or False
     """
     app_label, model_name = model_path.lower().split(".")
-    return ContentType.objects.get_by_natural_key(
-        app_label, model_name
-    ).model_class()
+    try:
+        return ContentType.objects.get_by_natural_key(
+            app_label, model_name
+        ).model_class()
+    except ObjectDoesNotExist:
+        return False
+
 
 def get_all_models() -> list:
     """
-    Get's all models from settings.AIRTABLE_IMPORT_SETTINGS.
+    Gets all models from settings.AIRTABLE_IMPORT_SETTINGS.
 
     Returns a list of models.
     """
@@ -37,6 +41,7 @@ def get_all_models() -> list:
 
     return validated_models
 
+
 def get_validated_models(models=[]) -> list:
     """
     Accept a list of model paths (ie. ['appname.Model1', 'appname.Model2']).
@@ -50,9 +55,8 @@ def get_validated_models(models=[]) -> list:
     for label in models:
         if "." in label:
             # interpret as a model
-            try:
-                model = get_model_for_path(label)
-            except ObjectDoesNotExist:
+            model = get_model_for_path(label)
+            if not model:
                 raise ImproperlyConfigured("%r is not recognised as a model name." % label)
 
             validated_models.append(model)
@@ -62,7 +66,7 @@ def get_validated_models(models=[]) -> list:
         airtable_settings = settings.AIRTABLE_IMPORT_SETTINGS.get(
             model._meta.label, {}
         )
-        # Remove this model the the `models` list so it doesn't hit the Airtable API.
+        # Remove this model from the `models` list so it doesn't hit the Airtable API.
         if not airtable_settings.get("AIRTABLE_IMPORT_ALLOWED", True):
             models.remove(model)
 
