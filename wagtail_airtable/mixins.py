@@ -99,7 +99,7 @@ class AirtableMixin(models.Model):
                 )
 
     def get_record_usage_url(self):
-        if self.AIRTABLE_BASE_URL:
+        if self.AIRTABLE_BASE_URL and self.airtable_record_id:
             url = self.AIRTABLE_BASE_URL.rstrip('/')
             return f"{url}/{self.airtable_record_id}"
         return None
