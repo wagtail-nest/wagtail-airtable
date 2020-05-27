@@ -25,3 +25,11 @@ class TestAdminViews(TestCase):
         instance = response.context_data['instance']
         self.assertEqual(instance.airtable_record_id, '')
 
+    def test_import_snippet_button_on_list_view(self):
+        response = self.client.get('/admin/snippets/tests/advert/')
+        self.assertContains(response, 'Import Advert')
+
+    def test_no_import_snippet_button_on_list_view(self):
+        response = self.client.get('/admin/snippets/tests/modelnotused/')
+        self.assertNotContains(response, 'Import Advert')
+
