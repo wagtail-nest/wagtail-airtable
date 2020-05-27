@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "wagtail-airtable"
+version = "0.1.0"
+description = "Sync data between Wagtail and Airtable"
+authors = ["Kalob Taulien <kalob.taulien@torchbox.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+airtable-python-wrapper = "~0.13.0"
+djangorestframework = "~3.11.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
