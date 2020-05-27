@@ -1,11 +1,11 @@
 from django.conf import settings
 from django.conf.urls import url
-from django.contrib import messages
 from django.urls import reverse
 from wagtail.core import hooks
 from wagtail.admin.menu import MenuItem
 
 from wagtail_airtable.views import AirtableImportListing
+from wagtail_airtable.utils import airtable_message, can_send_airtable_messages
 from .mixins import AirtableMixin
 
 
@@ -37,42 +37,23 @@ def register_airtable_setting():
 
 @hooks.register("after_edit_page")
 def after_page_update(request, page):
-    # Check if the page is an AirtableMixin Subclass
-    watail_airtable_enabled = getattr(settings, "WAGTAIL_AIRTABLE_ENABLED", False)
-    if watail_airtable_enabled and issubclass(page.__class__, AirtableMixin):
-        # When AirtableMixin.save() is called..
-        # Either it'll connect with Airtable and update the row as expected, or
-        # it will have some type of error.
-        # If _airtable_update_error exists on the page, use that string as the
-        # message error.
-        # Otherwise assume a successful update happened on the Airtable row
-        if hasattr(page, "is_airtable_enabled") and page.is_airtable_enabled:
-            if hasattr(page, "_airtable_update_error"):
-                messages.add_message(
-                    request, messages.ERROR, page._airtable_update_error
-                )
-            else:
-                messages.add_message(
-                    request, messages.SUCCESS, "Airtable record updated"
-                )
+    if can_send_airtable_messages(page):
+        airtable_message(request, page)
 
 
+@hooks.register("after_create_snippet")
 @hooks.register("after_edit_snippet")
 def after_snippet_update(request, instance):
-    watail_airtable_enabled = getattr(settings, "WAGTAIL_AIRTABLE_ENABLED", False)
-    if watail_airtable_enabled and issubclass(instance.__class__, AirtableMixin):
-        # When AirtableMixin.save() is called..
-        # Either it'll connect with Airtable and update the row as expected, or
-        # it will have some type of error.
-        # If _airtable_update_error exists on the page, use that string as the
-        # message error.
-        # Otherwise assume a successful update happened on the Airtable row
-        if hasattr(instance, "is_airtable_enabled") and instance.is_airtable_enabled:
-            if hasattr(instance, "_airtable_update_error"):
-                messages.add_message(
-                    request, messages.ERROR, instance._airtable_update_error
-                )
-            else:
-                messages.add_message(
-                    request, messages.SUCCESS, "Airtable record updated"
-                )
+    if can_send_airtable_messages(instance):
+        airtable_message(request, instance)
+
+
+@hooks.register("after_delete_snippet")
+def after_snippet_delete(request, instances):
+    total_deleted = len(instances)
+    instance = instances[0]
+    if can_send_airtable_messages(instance):
+        message = f"Airtable record deleted"
+        if total_deleted > 1:
+            message = f"{total_deleted} Airtable records deleted"
+        airtable_message(request, instance, message=message, buttons_enabled=False)
