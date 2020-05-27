@@ -62,13 +62,19 @@ AIRTABLE_IMPORT_SETTINGS = {
             'Wagtail Page ID': 'pk',
         },
         'AIRTABLE_SERIALIZER': 'path.to.your.pages.serializer.PageSerializer',
-        # Below is an OPTIONAL setting.
+        # Below are OPTIONAL settings.
         # By disabling `AIRTABLE_IMPORT_ALLOWED` you can prevent Airtable imports
         # Use cases may be:
         #   - disabling page imports since they are difficult to setup and maintain,
         #   - one-way sync to Airtable only (ie. when a model/Page is saved)
         # Default is True
         'AIRTABLE_IMPORT_ALLOWED': False,
+        # Add the AIRTABLE_BASE_URL setting if you would like to provide a nice link
+        # to the Airtable Record after a snippet or Page has been saved.
+        # To get this URL open your Airtable base on Airtable.com and paste the link.
+        # The recordId will be automatically added so please don't add that
+        # You can add the below setting. This is optional and disabled by default.
+        'AIRTABLE_BASE_URL': 'https://airtable.com/tblxXxXxXxXxXxXx/viwxXxXxXxXxXxXx',
     },
     # ...
 }

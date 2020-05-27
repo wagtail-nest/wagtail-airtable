@@ -14,6 +14,7 @@ AIRTABLE_IMPORT_SETTINGS = {
         "AIRTABLE_TABLE_NAME": "Your Table Name",  # Airtable Bases can have multiple tables. Tell it which one to use.
         "AIRTABLE_UNIQUE_IDENTIFIER": "slug",  # Must match the Airtable Column name
         "AIRTABLE_SERIALIZER": "yourapp.serializers.YourModelSerializer",  # A custom serializer for validating imported data.
+        "AIRTABLE_BASE_URL": "https://airtable.com/tblxXxXxXxXxXxXx/viwxXxXxXxXxXxXx",  # Creates a "View record in Airtable" button in the success notification.
     },
     # Applies to page_example.py
     "yourapp.HomePage": {
