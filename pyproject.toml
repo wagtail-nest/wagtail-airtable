@@ -2,10 +2,32 @@
 name = "wagtail-airtable"
 version = "0.1.0"
 description = "Sync data between Wagtail and Airtable"
+readme = "README.md"
 authors = ["Kalob Taulien <kalob.taulien@torchbox.com>"]
+homepage = "https://github.com/wagtail/wagtail-airtable"
+repository = "https://github.com/wagtail/wagtail-airtable"
+documentation = "https://github.com/wagtail/wagtail-airtable/blob/master/README.md"
+keywords = ["wagtail", "airtable"]
+classifiers=[
+    'Environment :: Web Environment',
+    'Intended Audience :: Developers',
+    'License :: OSI Approved :: BSD License',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
+    'Framework :: Django',
+    'Framework :: Wagtail',
+    'Framework :: Wagtail :: 2',
+]
+packages = [
+    { include = "wagtail_airtable" },
+]
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = ">=3.6,<=3.8"
+wagtail = ">=2.6"
 airtable-python-wrapper = "~0.13.0"
 djangorestframework = "~3.11.0"
 
