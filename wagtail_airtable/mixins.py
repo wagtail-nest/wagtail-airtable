@@ -268,6 +268,12 @@ class AirtableMixin(models.Model):
 
         Example: 401 Client Error: Unauthorized for url: https://api.airtable.com/v0/appYourAppId/Your%20Table?filterByFormula=.... [Error: {'type': 'AUTHENTICATION_REQUIRED', 'message': 'Authentication required'}]
         """
+        if not error:
+            return {
+                "status_code": 503,
+                "type": "SERVICE_UNAVAILABLE",
+                "message": "Service may be down, or is otherwise uncreachable"
+            }
 
         code = int(error.split(":", 1)[0].split(" ")[0])
         error_json = error.split("[Error: ")[1].rstrip("]")
