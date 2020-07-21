@@ -155,6 +155,7 @@ class Importer:
                             "\t\t\t Page is not locked. Saving page and creating a new revision."
                         )
                         # Only save the page if the page is not locked
+                        instance._skip_signals=True
                         instance.save()
                         instance.save_revision()
                         self.updated = self.updated + 1
@@ -164,6 +165,7 @@ class Importer:
                 else:
                     # Django model. Save normally.
                     self.debug_message("\t\t Saving Django model")
+                    instance._skip_signals=True
                     instance.save()
                     self.updated = self.updated + 1
 
@@ -252,6 +254,7 @@ class Importer:
                             # Wagtail page. Requires a .save_revision()
                             if not instance.locked:
                                 # Only save the page if the page is not locked
+                                instance._skip_signals=True
                                 instance.save()
                                 instance.save_revision()
                                 self.updated = self.updated + 1
@@ -262,6 +265,7 @@ class Importer:
                                 self.skipped = self.skipped + 1
                         else:
                             # Django model. Save normally.
+                            instance._skip_signals=True
                             instance.save()
                             self.debug_message("\t\t\t Saved!")
                             self.updated = self.updated + 1
@@ -483,6 +487,7 @@ class Importer:
                 try:
                     self.debug_message("\t\t Attempting to create a new object...")
                     new_model = model(**data_for_new_model)
+                    new_model._skip_signals=True
                     new_model.save()
                     self.debug_message("\t\t Object created")
                     self.created = self.created + 1
