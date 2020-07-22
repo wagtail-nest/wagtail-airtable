@@ -290,6 +290,7 @@ class AirtableMixin(models.Model):
         If there's an existing airtable record id, update the row.
         Otherwise attempt to create a new record.
         """
+        saved_model = super().save(*args, **kwargs) # Save to database first so we get pk, in case it's used for uniqueness
         self.setup_airtable()
         if self._push_to_airtable and self.push_to_airtable:
             # Every airtable model needs mapped fields.
@@ -321,7 +322,7 @@ class AirtableMixin(models.Model):
                     # Used in the `after_edit_page` hook. If it exists, an error message will be displayed.
                     self._airtable_update_error = message
 
-        return super().save(*args, **kwargs)
+        return saved_model
 
     def delete(self, *args, **kwargs):
         self.setup_airtable()
