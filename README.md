@@ -110,6 +110,18 @@ Optionally you can turn up the verbosity for better debugging with the `--verbos
 ##### import_airtable command
 This command will look for any `appname.ModelName`s you provide it and use the mapping settings to find data in the Airtable. See the "Behind the scenes" section for more details on how importing works.
 
+##### skipping django signals
+By default the `import_airtable` command adds an additional attribute to the models being saved called `_skip_signals` - which is set to `True` you can use this to bypass any `post_save` or `pre_save` signals you might have on the models being imported so those don't run. e.g.
+
+```
+@receiver(post_save, sender=MyModel)
+def post_save_function(sender, **kwargs):
+    if not sender._skip_signals:
+        # rest of logic
+```
+
+if you don't do these checks on your signal, the save will run normally. 
+
 ### Local Testing Advice
 
 > **Note:** Be careful not to use the production settings as you could overwrite Wagtail or Airtable data.
