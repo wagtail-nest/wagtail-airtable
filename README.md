@@ -116,7 +116,7 @@ By default the `import_airtable` command adds an additional attribute to the mod
 ```
 @receiver(post_save, sender=MyModel)
 def post_save_function(sender, **kwargs):
-    if not sender._skip_signals:
+    if not hasattr(sender, "_skip_signals"):
         # rest of logic
 ```
 
