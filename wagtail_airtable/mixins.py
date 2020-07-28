@@ -322,6 +322,8 @@ class AirtableMixin(models.Model):
                 # ie. Looks for a matching `slug` in Airtable and Wagtail/Django
                 try:
                     self.create_record()
+                    # Save once more so the airtable_record_id is stored.
+                    super().save(*args, **kwargs)
                 except HTTPError as e:
                     error = self.parse_request_error(e.args[0])
                     message = (
