@@ -24,6 +24,9 @@ class AirtableMixin(models.Model):
     AIRTABLE_TABLE_NAME = None
     AIRTABLE_UNIQUE_IDENTIFIER = None
 
+    # On import, a lot of saving happens, so this attribute gets set to True during import and could be
+    # used as a bit of logic to skip a post_save signal, for example.
+    _skip_signals = False
     # If the Airtable integration for this model is enabled. Used for sending data to Airtable.
     _is_enabled = False
     # If the Airtable api setup is complete in this model. Used for singleton-like setup_airtable() method.
