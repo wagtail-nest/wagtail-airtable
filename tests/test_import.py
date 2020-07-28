@@ -203,6 +203,8 @@ class TestImportClass(TestCase):
         saved = importer.update_object(instance, 'recNewRecordId', serialized_data)
 
         self.assertTrue(saved)
+        # Check to make sure _skip_signals is set.
+        self.assertTrue(instance._skip_signals)
         self.assertEqual(importer.updated, 1)
         self.assertEqual(importer.records_used, ['recNewRecordId'])
         # Re-fetch the Advert instance and check its airtable_record_id
