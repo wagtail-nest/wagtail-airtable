@@ -63,16 +63,7 @@ class TestAdminViews(TestCase):
         self.assertIn('Airtable record updated', messages[1].message)
 
     def test_airtable_message_on_instance_delete(self):
-        advert = Advert.objects.create(
-            title="Wow brand new?!",
-            description="Lorem says what?",
-            external_link="https://example.com/",
-            is_active=True,
-            rating="1.5",
-            long_description="<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veniam laboriosam consequatur saepe. Repellat itaque dolores neque, impedit reprehenderit eum culpa voluptates harum sapiente nesciunt ratione.</p>",
-            points=10,
-            slug="wow-brand-new-advert"
-        )
+        advert = Advert.objects.get(slug='delete-me')
         response = self.client.post(f'/admin/snippets/tests/advert/{advert.id}/delete/')
         messages = list(get_messages(response.wsgi_request))
         self.assertEqual(len(messages), 2)

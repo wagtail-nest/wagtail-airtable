@@ -71,16 +71,6 @@ class TestAirtableModel(TestCase):
         self.assertTrue(advert._push_to_airtable)
         self.assertTrue(hasattr(advert, 'client'))
 
-    def test_create_object_from_orm(self):
-        advert = Advert.objects.create(
-            title='Throw away advert',
-            description='Lorem ipsum dolor sit amet, consectetur adipisicing elit.',
-            rating="2.5",
-            slug='disposable-advert',
-        )
-        self.assertEqual(advert.airtable_record_id, 'recNewRecordId')
-        self.assertEqual(advert.title, 'Throw away advert')
-
     def test_edit_object(self):
         advert = Advert.objects.create(
             title='Throw away advert',
@@ -104,18 +94,10 @@ class TestAirtableModel(TestCase):
         self.assertEqual(advert.title, "Edited title")
 
     def test_delete_object(self):
-        advert = Advert.objects.create(
-            title='Throw away advert',
-            description='Lorem ipsum dolor sit amet, consectetur adipisicing elit.',
-            rating="2.5",
-            slug='delete-me',
-        )
+        advert = Advert.objects.get(slug='delete-me')
         # If we werent mocking the Airtable.update() method, we'd assert advert.client.insert
-        advert.client.update.assert_called()
         self.assertEqual(advert.airtable_record_id, 'recNewRecordId')
-
         advert.delete()
-        advert.client.delete.assert_called()
         find_deleted_advert = Advert.objects.filter(slug='delete-me').count()
         self.assertEqual(find_deleted_advert, 0)
 

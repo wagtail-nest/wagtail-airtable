@@ -32,6 +32,21 @@
     }
 },
 {
+    "model": "tests.advert",
+    "pk": 2,
+    "fields": {
+        "title": "Wow brand new?!",
+        "description": "Lorem says what?",
+        "external_link": "https://example.com/",
+        "is_active": true,
+        "rating": "2.5",
+        "long_description": "<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veniam laboriosam consequatur saepe. Repellat itaque dolores neque, impedit reprehenderit eum culpa voluptates harum sapiente nesciunt ratione.</p>",
+        "points": 20,
+        "slug": "delete-me",
+        "airtable_record_id": "recNewRecordId"
+    }
+},
+{
     "pk": 2,
     "model": "wagtailcore.page",
     "fields": {

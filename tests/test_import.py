@@ -381,10 +381,6 @@ class TestImportClass(TestCase):
 
 
 class TestImportCommand(TransactionTestCase):
-    fixtures = ['test.json']
-
-    def setUp(self):
-        pass
 
     def test_import_command(self):
         from django.core.management import call_command
