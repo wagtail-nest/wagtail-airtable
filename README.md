@@ -120,7 +120,7 @@ def post_save_function(sender, **kwargs):
         # rest of logic
 ```
 
-if you don't do these checks on your signal, the save will run normally. 
+if you don't do these checks on your signal, the save will run normally.
 
 ### Local Testing Advice
 
@@ -146,3 +146,5 @@ In other cases such as Airtables Phone Number column type: if you are using a 3r
 Clone the project and cd into the `wagtail-airtable/tests/` directory. Then run `python runtests.py tests`. This project is using standard Django unit tests.
 
 To target a specific test you can run `python runtests.py tests.test_file.TheTestClass.test_specific_model`
+
+Tests are written against Wagtail 2.10 and later.
