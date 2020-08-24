@@ -148,3 +148,10 @@ Clone the project and cd into the `wagtail-airtable/tests/` directory. Then run 
 To target a specific test you can run `python runtests.py tests.test_file.TheTestClass.test_specific_model`
 
 Tests are written against Wagtail 2.10 and later.
+
+
+### Trouble Shooting Tips
+#### Duplicates happening on import
+Ensure that your serializer matches your field definition *exactly*, and in cases of `CharField`'s that have `blank=True` or `null=True` setting `required=False` on the serializer is also important. 
+
+In some cases 2 Models may get the same Airtable ID. To circumvent this error on imports the first one found will be set as the "real" one and the "impostors" will be set to `""` - this may create duplicate models in your system, if this is happening a lot. Make sure your export method and serializer import are set correctly. 
