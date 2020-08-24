@@ -442,7 +442,8 @@ class Importer:
                     obj = objs[0]
                     for ob in objs[1:]:
                         # set airtable_record_id on the "impostors" to ""
-                        ob.update(airtable_record_id="")
+                        ob.airtable_record_id = ""
+                        ob.save()
 
 
                 if obj:
