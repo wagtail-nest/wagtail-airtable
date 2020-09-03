@@ -337,7 +337,7 @@ class AirtableMixin(models.Model):
 
     def delete(self, *args, **kwargs):
         self.setup_airtable()
-        if self.airtable_record_id:
+        if self.push_to_airtable and self._push_to_airtable and self.airtable_record_id:
             # Try to delete the record from the Airtable.
             self.delete_record()
         return super().delete(*args, **kwargs)
