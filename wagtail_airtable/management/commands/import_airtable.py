@@ -435,6 +435,16 @@ class Importer:
                 except model.DoesNotExist:
                     obj = None
                     self.debug_message("\t\t Local object was NOT found")
+                except model.MultipleObjectsReturned:
+                    # In the case that multiple models have gotten the same record_id
+                    objs = model.objects.filter(airtable_record_id=record_id)
+                    # Set the first one to be the "right" one
+                    obj = objs[0]
+                    for ob in objs[1:]:
+                        # set airtable_record_id on the "impostors" to ""
+                        ob.airtable_record_id = ""
+                        ob.save()
+
 
                 if obj:
                     # Model object was found by it's airtable_record_id
