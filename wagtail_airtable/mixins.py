@@ -279,6 +279,12 @@ class AirtableMixin(models.Model):
             }
 
         code = int(error.split(":", 1)[0].split(" ")[0])
+        if code == 502:
+            return {
+                "status_code": code,
+                "type": "SERVER_ERROR",
+                "message": "Service may be down, or is otherwise uncreachable"
+            }        
         error_json = error.split("[Error: ")[1].rstrip("]")
         if error_json == "NOT_FOUND":  # 404's act different
             return {
