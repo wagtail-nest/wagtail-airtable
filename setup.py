@@ -5,12 +5,12 @@ from setuptools import setup, find_packages
 install_requires = [
     "wagtail>=2.6",
     "airtable-python-wrapper>=0.13.0",
-    "djangorestframework>=3.11.0",
+    "djangorestframework>=3.11.0,<=3.12.2",
 ]
 
 setup(
     name='wagtail-airtable',
-    version='0.1.4',
+    version='0.1.5',
     description="Sync data between Wagtail and Airtable",
     author='Kalob Taulien',
     author_email='kalob.taulien@torchbox.com',
@@ -28,6 +28,8 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Framework :: Django',
         'Framework :: Wagtail',
         'Framework :: Wagtail :: 2',

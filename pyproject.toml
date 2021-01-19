@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "wagtail-airtable"
-version = "0.1.4"
+version = "0.1.5"
 description = "Sync data between Wagtail and Airtable"
 readme = "README.rst"
 authors = ["Kalob Taulien <kalob.taulien@torchbox.com>"]
@@ -17,6 +17,8 @@ classifiers=[
     'Programming Language :: Python :: 3',
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
     'Framework :: Django',
     'Framework :: Wagtail',
     'Framework :: Wagtail :: 2',
@@ -26,10 +28,10 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.6,<=3.8"
+python = ">=3.6,<=3.9"
 wagtail = ">=2.6"
 airtable-python-wrapper = "~0.13.0"
-djangorestframework = "~3.11.0"
+djangorestframework = ">=3.11.0"
 
 [tool.poetry.dev-dependencies]
 
