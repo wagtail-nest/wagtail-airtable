@@ -1,4 +1,6 @@
-# from django.utils.dateparse import parse_datetime
+import datetime
+
+from django.utils.dateparse import parse_datetime
 from rest_framework import serializers
 from taggit.models import Tag
 from wagtail_airtable.serializers import AirtableSerializer
@@ -65,10 +67,19 @@ class BankNameSerializer(serializers.RelatedField):
         pass
 
 
-class DateSerializer(serializers.DateTimeField):
+class DateTimeSerializer(serializers.DateTimeField):
+    # Useful for parsing an Airtable Date field into a Django DateTimeField
     def to_internal_value(self, date):
         if type(date) == str and len(date):
             date = parse_datetime(date).isoformat()
+        return date
+
+
+class DateSerializer(serializers.DateTimeField):
+    # Useful for parsing an Airtable Date field into a Django DateField
+    def to_internal_value(self, date):
+        if type(date) == str and len(date):
+            date = datetime.datetime.strptime(date, "%Y-%m-%d").date()
         return date
 
 
