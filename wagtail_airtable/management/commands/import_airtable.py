@@ -4,8 +4,7 @@ from importlib import import_module
 from airtable import Airtable
 from django.db import models, IntegrityError
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand
 from logging import getLogger
 from modelcluster.contrib.taggit import ClusterTaggableManager
@@ -13,7 +12,7 @@ from taggit.managers import TaggableManager
 from wagtail.core.models import Page
 
 from wagtail_airtable.tests import MockAirtable
-from wagtail_airtable.utils import get_model_for_path, get_validated_models
+from wagtail_airtable.utils import get_validated_models
 
 logger = getLogger(__name__)
 
@@ -308,11 +307,6 @@ class Importer:
 
     def is_wagtail_page(self, model):
         if issubclass(model, Page):
-            logger.info(f"{model._meta.verbose_name} cannot be created from an import.")
-            self.debug_message(
-                f"\t\t {model._meta.verbose_name} is a Wagtail Page and cannot be created from an import."
-            )
-            # New record being processed. Save it to the list of records.
             return True
         return False
 
@@ -416,6 +410,7 @@ class Importer:
                 if record["id"] in self.records_used:
                     continue
 
+
                 record_id = record["id"]
                 record_fields = record["fields"]
                 mapped_import_fields = self.convert_mapped_fields(
@@ -479,12 +474,48 @@ class Importer:
                 if was_updated:
                     continue
 
-                # Cannot bulk-create Wagtail pages from Airtable because we don't know where the pages
-                # Are supposed to live, what their tree depth should be, and a few other factors.
-                # For this scenario, log information and skip the loop iteration.
+                # Look for the a PARENT_PAGE_ID setting and hopefully find a corresponding
+                # Wagtail Page to set as the Parent Page. If the `parent_page` is set in
+                # this conditional, it will be used later to create a new page.
+                parent_page = None
                 if self.is_wagtail_page(model):
+                    # Page record was used. This is for caching duplicate entries to avoid too many API calls.
                     self.records_used.append(record_id)
-                    continue
+                    self.debug_message("\t\t Checking PARENT_PAGE_ID settings...")
+
+                    # Check if the PARENT_PAGE_ID setting is set. If it's not set in the Django settings,
+                    # Don't try to create a new Wagtail Page.
+                    parent_page_id_setting = airtable_settings.get("PARENT_PAGE_ID", None)
+                    if parent_page_id_setting:
+                        self.debug_message("\t\t Setting found...")
+
+                        # Check if the PARENT_PAGE_ID is a callable, string location to a function, or an int ID.
+                        if callable(parent_page_id_setting):
+                            # A function was passed into the settings. Execute it.
+                            parent_page_id = parent_page_id_setting()
+                        elif isinstance(parent_page_id_setting, str):
+                            # A string location was passed into the settings
+                            # Parse the string function location and execute it
+                            location, function_name = parent_page_id_setting.rsplit(".", 1)
+                            module = import_module(location)
+                            parent_page_callable = getattr(module, function_name)
+                            parent_page_id = parent_page_callable()
+                        else:
+                            # This should be an integer representing the Parent Page to nest pages under
+                            parent_page_id = parent_page_id_setting
+
+                        try:
+                            # Look for the parent page ID. If it doesn't exist, a page cannot be created.
+                            # This needs to be set to a value for later use.
+                            parent_page = Page.objects.get(pk=parent_page_id)
+                        except Page.DoesNotExist:
+                            logger.info(
+                                f"Could not create new Page object. Parent page with ID {parent_page_id} doesn't exist"
+                            )
+                            self.debug_message(
+                                f"\t\t Could not create new Page object. Parent page with ID {parent_page_id} doesn't exist"
+                            )
+                            continue
 
                 # Attempt to format valid data to create a new model form either the
                 # validated data in the serializer, or the mapped_field data.
@@ -495,11 +526,29 @@ class Importer:
                 # If there is no match whatsoever, try to create a new `model` instance.
                 # Note: this may fail if there isn't enough data in the Airtable record.
                 try:
-                    self.debug_message("\t\t Attempting to create a new object...")
+                    self.debug_message("\t\t Attempting to create a new Page...")
                     new_model = model(**data_for_new_model)
                     new_model._skip_signals=True
-                    new_model.save()
-                    self.debug_message("\t\t Object created")
+                    # `parent_page` is either None or a Page instance.
+                    if parent_page:
+                        # Pages are not live by default, and always have unpublished changes.
+                        new_model.live = False
+                        new_model.has_unpublished_changes = True
+
+                        # Add the new page to the parent page.
+                        parent_page.add_child(instance=new_model)
+
+                        # If the settings are set to auto publish a page when it's imported,
+                        # save the page revision and publish it. Otherwise just save the revision.
+                        if airtable_settings.get("AUTO_PUBLISH_NEW_PAGES", False):
+                            self.debug_message("\t\t Publishing new Page...")
+                            new_model.save_revision().publish()
+                        else:
+                            new_model.save_revision()
+                        self.debug_message("\t\t Page created")
+                    else:
+                        new_model.save()
+                        self.debug_message("\t\t Object created")
                     self.created = self.created + 1
                 except ValueError as value_error:
                     logger.info(
