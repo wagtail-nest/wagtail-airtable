@@ -114,6 +114,8 @@ AIRTABLE_IMPORT_SETTINGS = {
 
 ### Wagtail Page creation on Airtable Imports
 
+This feature was sponsored by [The Mozilla Foundation](https://foundation.mozilla.org/).
+
 In `wagtail-airtable` v0.1.6 and up you can create Wagtail Pages from Airtable imports.
 
 A few settings need to be set for this to work as you would expect. Read through the follow code to see which settings are needed:
