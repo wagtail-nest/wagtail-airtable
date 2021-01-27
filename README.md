@@ -50,7 +50,7 @@ AIRTABLE_IMPORT_SETTINGS = {
     'appname.OtherModelName': {
         'AIRTABLE_BASE_KEY': 'app4ds902jFam035S',
         'AIRTABLE_TABLE_NAME': 'Your Airtable Table Name',
-        'AIRTABLE_UNIQUE_IDENTIFIER':
+        'AIRTABLE_UNIQUE_IDENTIFIER': {
             'Page Slug': 'slug', # 'Page Slug' column name in Airtable, 'slug' field name in Wagtail.
         },
         'AIRTABLE_SERIALIZER': 'path.to.your.model.serializer.OtherCustomModelSerializer'
@@ -58,7 +58,7 @@ AIRTABLE_IMPORT_SETTINGS = {
     'pages.HomePage': {
         'AIRTABLE_BASE_KEY': 'app2ds123jP23035Z',
         'AIRTABLE_TABLE_NAME': 'Wagtail Page Tracking Table',
-        'AIRTABLE_UNIQUE_IDENTIFIER':
+        'AIRTABLE_UNIQUE_IDENTIFIER': {
             'Wagtail Page ID': 'pk',
         },
         'AIRTABLE_SERIALIZER': 'path.to.your.pages.serializer.PageSerializer',
@@ -152,6 +152,6 @@ Tests are written against Wagtail 2.10 and later.
 
 ### Trouble Shooting Tips
 #### Duplicates happening on import
-Ensure that your serializer matches your field definition *exactly*, and in cases of `CharField`'s that have `blank=True` or `null=True` setting `required=False` on the serializer is also important. 
+Ensure that your serializer matches your field definition *exactly*, and in cases of `CharField`'s that have `blank=True` or `null=True` setting `required=False` on the serializer is also important.
 
-In some cases 2 Models may get the same Airtable ID. To circumvent this error on imports the first one found will be set as the "real" one and the "impostors" will be set to `""` - this may create duplicate models in your system, if this is happening a lot. Make sure your export method and serializer import are set correctly. 
+In some cases 2 Models may get the same Airtable ID. To circumvent this error on imports the first one found will be set as the "real" one and the "impostors" will be set to `""` - this may create duplicate models in your system, if this is happening a lot. Make sure your export method and serializer import are set correctly.

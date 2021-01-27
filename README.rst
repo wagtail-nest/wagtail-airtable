@@ -46,7 +46,7 @@ Below is a base configuration or ``ModelName`` and ``OtherModelName`` (both are 
         'appname.OtherModelName': {
             'AIRTABLE_BASE_KEY': 'app4ds902jFam035S',
             'AIRTABLE_TABLE_NAME': 'Your Airtable Table Name',
-            'AIRTABLE_UNIQUE_IDENTIFIER':
+            'AIRTABLE_UNIQUE_IDENTIFIER': {
                 'Page Slug': 'slug', # 'Page Slug' column name in Airtable, 'slug' field name in Wagtail.
             },
             'AIRTABLE_SERIALIZER': 'path.to.your.model.serializer.OtherCustomModelSerializer'
@@ -54,7 +54,7 @@ Below is a base configuration or ``ModelName`` and ``OtherModelName`` (both are 
         'pages.HomePage': {
             'AIRTABLE_BASE_KEY': 'app2ds123jP23035Z',
             'AIRTABLE_TABLE_NAME': 'Wagtail Page Tracking Table',
-            'AIRTABLE_UNIQUE_IDENTIFIER':
+            'AIRTABLE_UNIQUE_IDENTIFIER': {
                 'Wagtail Page ID': 'pk',
             },
             'AIRTABLE_SERIALIZER': 'path.to.your.pages.serializer.PageSerializer',
