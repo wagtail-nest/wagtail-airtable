@@ -10,7 +10,7 @@ install_requires = [
 
 setup(
     name='wagtail-airtable',
-    version='0.1.5',
+    version='0.1.6',
     description="Sync data between Wagtail and Airtable",
     author='Kalob Taulien',
     author_email='kalob.taulien@torchbox.com',
