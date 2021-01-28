@@ -68,13 +68,26 @@ AIRTABLE_IMPORT_SETTINGS = {
         #   - disabling page imports since they are difficult to setup and maintain,
         #   - one-way sync to Airtable only (ie. when a model/Page is saved)
         # Default is True
-        'AIRTABLE_IMPORT_ALLOWED': False,
+        'AIRTABLE_IMPORT_ALLOWED': True,
         # Add the AIRTABLE_BASE_URL setting if you would like to provide a nice link
         # to the Airtable Record after a snippet or Page has been saved.
         # To get this URL open your Airtable base on Airtable.com and paste the link.
         # The recordId will be automatically added so please don't add that
         # You can add the below setting. This is optional and disabled by default.
         'AIRTABLE_BASE_URL': 'https://airtable.com/tblxXxXxXxXxXxXx/viwxXxXxXxXxXxXx',
+        # The PARENT_PAGE_ID setting is used for creating new Airtable Pages. Every
+        # Wagtail Page requires a "parent" page. This setting can either be:
+        # 1. A callable (ie `my_function` without the parentheses)
+        # 2. A path to a function. (ie. 'appname.directory.filename.my_function')
+        # 3. A raw integer.
+        # If you choose option #1 (callable) or option #2 (path to a function)
+        # Your function needs to return an integer which will represent the Parent
+        # Page ID where all imported pages will be created as child pages.
+        'PARENT_PAGE_ID': 'path.to.function',
+        # The `AUTO_PUBLISH_NEW_PAGES` setting will tell this package to either
+        # Automatically publish a newly created page, or set to draft.
+        # True = auto publishing is on. False = auto publish is off (pages will be drafts)
+        'AUTO_PUBLISH_NEW_PAGES': False,
     },
     # ...
 }
@@ -98,6 +111,33 @@ AIRTABLE_IMPORT_SETTINGS = {
     'appname.YourModel': CUSTOM_PAGE_SETTINGS,
 }
 ```
+
+### Wagtail Page creation on Airtable Imports
+
+This feature was sponsored by [The Mozilla Foundation](https://foundation.mozilla.org/).
+
+In `wagtail-airtable` v0.1.6 and up you can create Wagtail Pages from Airtable imports.
+
+A few settings need to be set for this to work as you would expect. Read through the following code to see which settings are needed:
+
+```python
+AIRTABLE_IMPORT_SETTINGS = {
+    'pages.HomePage': {
+        'AIRTABLE_BASE_KEY': 'app2ds123jP23035Z',
+        'AIRTABLE_TABLE_NAME': 'Wagtail Page Tracking Table',
+        'AIRTABLE_UNIQUE_IDENTIFIER': {
+            'Wagtail Page ID': 'pk',
+        },
+        'AIRTABLE_SERIALIZER': 'path.to.your.pages.serializer.PageSerializer',
+        'AIRTABLE_IMPORT_ALLOWED': True,  # This must be set
+        'PARENT_PAGE_ID': 'path.to.function.that.returns.an.integer',  # This must be set
+    },
+}
+```
+
+Once your settings are ready, you can start creating new Pages in Airtable and import those pages via the Wagtail Admin (found in the setting menu).
+
+**Caveats**: In the above code we see `{'Wagtail Page ID': 'pk',}`, this means there's a column in Airtable named "Wagtail Page ID" and it mapped to a Page pk. When you create a new Wagtail Page inside of an Airtable sheet, _keep this cell blank in your new row_. It will auto-update when it gets imported. This happens because Airtable (and the editors) likely don't know what the new Page ID is going to be, so we let Wagtail set it, and then update the Airtable again.
 
 ### Management Commands
 
@@ -143,7 +183,7 @@ For example, if you have a BooleanField in a Django model (or Wagtail Page) and 
 In other cases such as Airtables Phone Number column type: if you are using a 3rd party package to handle phone numbers and phone number validation, you'll want to write a custom serializer to handle the incoming value from Airtable (when you import from Airtable). The data will likely come through to Wagtail as a string and you'll want to adjust the string value to be a proper phone number format for internal Wagtail/Django storage. (You may also need to convert the phone number to a standard string when exporting to Airtable as well)
 
 ### Running Tests
-Clone the project and cd into the `wagtail-airtable/tests/` directory. Then run `python runtests.py tests`. This project is using standard Django unit tests.
+Clone the project and cd into the `wagtail-airtable/` directory. Then run `python runtests.py tests`. This project is using standard Django unit tests.
 
 To target a specific test you can run `python runtests.py tests.test_file.TheTestClass.test_specific_model`
 

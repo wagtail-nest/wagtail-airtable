@@ -45,7 +45,7 @@ class TestAdminViews(TestCase):
         })
         messages = list(get_messages(response.wsgi_request))
         self.assertEqual(len(messages), 2)
-        self.assertIn('Advertisement &#x27;New advert&#x27; created', messages[0].message)
+        self.assertIn('Advertisement &#39;New advert&#39; created', messages[0].message)
         self.assertIn('Airtable record updated', messages[1].message)
 
     def test_airtable_message_on_instance_edit(self):
@@ -59,7 +59,7 @@ class TestAdminViews(TestCase):
         })
         messages = list(get_messages(response.wsgi_request))
         self.assertEqual(len(messages), 2)
-        self.assertIn('Advertisement &#x27;Edited&#x27; updated', messages[0].message)
+        self.assertIn('Advertisement &#39;Edited&#39; updated', messages[0].message)
         self.assertIn('Airtable record updated', messages[1].message)
 
     def test_airtable_message_on_instance_delete(self):
@@ -67,5 +67,5 @@ class TestAdminViews(TestCase):
         response = self.client.post(f'/admin/snippets/tests/advert/{advert.id}/delete/')
         messages = list(get_messages(response.wsgi_request))
         self.assertEqual(len(messages), 2)
-        self.assertIn('Advertisement &#x27;Wow brand new?!&#x27; deleted', messages[0].message)
+        self.assertIn('Advertisement &#39;Wow brand new?!&#39; deleted', messages[0].message)
         self.assertIn('Airtable record deleted', messages[1].message)
