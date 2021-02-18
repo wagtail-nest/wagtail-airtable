@@ -270,21 +270,25 @@ class AirtableMixin(models.Model):
         Parse an Airtable/requests HTTPError string.
 
         Example: 401 Client Error: Unauthorized for url: https://api.airtable.com/v0/appYourAppId/Your%20Table?filterByFormula=.... [Error: {'type': 'AUTHENTICATION_REQUIRED', 'message': 'Authentication required'}]
+        Example: 503 Server Error: Service Unavailable for url: https://api.airtable.com/v0/appXXXXXXXX/BaseName'
         """
-        if not error:
+        if not error or "503 Server Error" in error:
+            # If there is a 503 error
             return {
                 "status_code": 503,
                 "type": "SERVICE_UNAVAILABLE",
-                "message": "Service may be down, or is otherwise uncreachable"
+                "message": "Airtable may be down, or is otherwise unreachable"
             }
 
         code = int(error.split(":", 1)[0].split(" ")[0])
         if code == 502:
+            # If there is a 502 error
             return {
                 "status_code": code,
                 "type": "SERVER_ERROR",
-                "message": "Service may be down, or is otherwise uncreachable"
-            }        
+                "message": "Service may be down, or is otherwise unreachable"
+            }
+
         error_json = error.split("[Error: ")[1].rstrip("]")
         if error_json == "NOT_FOUND":  # 404's act different
             return {
