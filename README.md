@@ -23,7 +23,7 @@ This package will attempt to match a model object against row in Airtable using 
 * Add `'wagtail_airtable'` to your project's `INSTALLED_APPS`.
     * To enable the snippet-specific import button on the Snippet list view make sure `wagtail_airtable` is above `wagtail.snippets` in your `INSTALLED_APPS`
 * In your settings you will need to map Django models to Airtable settings. Every model you want to map to an Airtable sheet will need:
-    * An `AIRTABLE_BASE_KEY`. You can find the base key in the [https://airtable.com/api](Airtable API docs) when you're signed in to Airtable.com
+    * An `AIRTABLE_BASE_KEY`. You can find the base key in the [Airtable API docs](https://airtable.com/api) when you're signed in to Airtable.com
     * An `AIRTABLE_TABLE_NAME` to determine which table to connect to.
     * An `AIRTABLE_UNIQUE_IDENTIFIER`. This can either be a string or a dictionary mapping the Airtable column name to your unique field in your model.
         * ie. `AIRTABLE_UNIQUE_IDENTIFIER: 'slug',` this will match the `slug` field on your model with the `slug` column name in Airtable. Use this option if your model field and your Airtable column name are identical.
