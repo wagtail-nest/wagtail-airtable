@@ -21,7 +21,7 @@ jobs:
       - name: Install Dependencies
         run: |
           poetry install
-          potry shell
+          poetry shell
       - name: Run Tests
         run: |
           python runtests.py
