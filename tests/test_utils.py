@@ -45,8 +45,8 @@ class TestUtilFunctions(TestCase):
         available_models = get_all_models()
         self.assertListEqual(available_models, [SimplePage, Advert, SimilarToAdvert])
 
-    def test_get_all_models_as_string(self):
-        available_models = get_all_models(as_string=True)
+    def test_get_all_models_as_path(self):
+        available_models = get_all_models(as_path=True)
         self.assertListEqual(available_models, ['tests.simplepage', 'tests.advert', 'tests.similartoadvert'])
 
     def test_can_send_airtable_messages(self):
@@ -80,7 +80,7 @@ class TestUtilFunctions(TestCase):
         self.assertIn('2nd custom button text', message2)
 
     @patch.object(Importer, '__init__')
-    def test_import_models(self, mock):
+    def test_import_models_without_arguments(self, mock):
         try:
             import_models()
         except:
@@ -88,4 +88,18 @@ class TestUtilFunctions(TestCase):
             pass
 
         self.assertTrue(mock.called)
-        mock.assert_called_with(models=get_all_models(as_string=True), options={"verbosity": 1})
+        # Ensure that the constructor with all models.
+        mock.assert_called_with(models=get_all_models(as_path=True), options={"verbosity": 1})
+
+    @patch.object(Importer, '__init__')
+    def test_import_models_with_arguments(self, mock):
+        mock.return_value = None
+        try:
+            import_models(models=[Advert], verbosity=2)
+        except:
+            # Do nothing here for now, just fail silently
+            pass
+
+        self.assertTrue(mock.called)
+        # Ensure that the constructor with specified arguments
+        mock.assert_called_with(models=["tests.advert"], options={"verbosity": 2})

@@ -24,13 +24,26 @@ def get_model_for_path(model_path):
     except ObjectDoesNotExist:
         return False
 
+def get_models_as_paths(models) -> list:
+    """
+    Given a model list, return a list of model as string
+    """
+    models_paths = []
 
-def get_all_models(as_string=False) -> list:
+    for model in models:
+        content_type = ContentType.objects.get_for_model(model)
+        model_path = "{}.{}".format(content_type.app_label, content_type.model).lower()
+        models_paths.append(model_path)
+
+    return models_paths
+
+
+def get_all_models(as_path=False) -> list:
     """
     Gets all models from settings.AIRTABLE_IMPORT_SETTINGS.
 
     Returns a list of models.
-    Accepts an optionnal argument to return a list of models strings instead of a list of models.
+    Accepts an optionnal argument to return a list of models paths instead of a list of models.
     """
     airtable_settings = getattr(settings, "AIRTABLE_IMPORT_SETTINGS", {})
     validated_models = []
@@ -40,19 +53,18 @@ def get_all_models(as_string=False) -> list:
             if "." in label:
                 try:
                     model = get_model_for_path(label)
-                    if as_string:
-                        validated_models.append(label)
-                    else:
-                        validated_models.append(model)
+                    validated_models.append(model)
                 except ObjectDoesNotExist:
                     raise ImproperlyConfigured(
                         "%r is not recognised as a model name." % label
                     )
 
+    if as_path:
+        return get_models_as_paths(validated_models)
     return validated_models
 
 
-def get_validated_models(models=[]) -> list:
+def get_validated_models(models=[], as_path=False) -> list:
     """
     Accept a list of model paths (ie. ['appname.Model1', 'appname.Model2']).
 
@@ -75,11 +87,13 @@ def get_validated_models(models=[]) -> list:
 
     models = validated_models[:]
     for model in validated_models:
-        airtable_settings = settings.AIRTABLE_IMPORT_SETTINGS.get(model._meta.label, {})
+        airtable_settings = settings.AIRTABLE_IMPORT_SETTINGS.get(model._meta.label, )
         # Remove this model from the `models` list so it doesn't hit the Airtable API.
         if not airtable_settings.get("AIRTABLE_IMPORT_ALLOWED", True):
             models.remove(model)
 
+    if as_path:
+        return get_models_as_paths(models)
     return models
 
 
@@ -113,7 +127,7 @@ def import_models(models=None, verbosity=1):
     # management command.
     from wagtail_airtable.management.commands.import_airtable import Importer
 
-    models = models or get_all_models(as_string=True)
+    models = get_validated_models(models=get_models_as_paths(models), as_path=True) if models else get_all_models(as_path=True)
     importer = Importer(models=models, options={"verbosity": verbosity})
     return importer.run()
 
