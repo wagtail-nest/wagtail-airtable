@@ -5,7 +5,6 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 
-from wagtail_airtable.management.commands.import_airtable import Importer
 from wagtail_airtable.mixins import AirtableMixin
 
 from wagtail.admin import messages
@@ -99,15 +98,20 @@ def can_send_airtable_messages(instance) -> bool:
         return True
     return False
 
-def import_models(models=get_all_models(), verbosity=1):
+def import_models(models=None, verbosity=1):
     """
     Import models set in Wagtail Airtable settings
 
     Supports a list of models if only a limited set of models need to be imported.
     """
+
+    # Avoid circular import error as get_validated_models is used in import_airtable
+    # management command.
+    from wagtail_airtable.management.commands.import_airtable import Importer
+
+    models = models or get_validated_models()
     importer = Importer(models=models, options={"verbosity": verbosity})
-    created, skipped, updated = importer.run()
-    return created, skipped, updated
+    return importer.run()
 
 
 def airtable_message(request, instance, message="Airtable record updated", button_text="View record in Airtable", buttons_enabled=True) -> None:
