@@ -26,5 +26,5 @@ jobs:
 
       - name: Run Tests
         run: |
-          poetry run runtests.py
+          poetry run python runtests.py
 
