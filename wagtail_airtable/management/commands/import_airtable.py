@@ -12,7 +12,6 @@ from taggit.managers import TaggableManager
 from wagtail.core.models import Page
 
 from wagtail_airtable.tests import MockAirtable
-# Avoid circular import error as the importer is used in utils.import_models
 from wagtail_airtable.utils import get_validated_models
 
 logger = getLogger(__name__)

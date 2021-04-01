@@ -40,7 +40,10 @@ def get_all_models(as_string=False) -> list:
             if "." in label:
                 try:
                     model = get_model_for_path(label)
-                    validated_models.append(model)
+                    if as_string:
+                        validated_models.append(label)
+                    else:
+                        validated_models.append(model)
                 except ObjectDoesNotExist:
                     raise ImproperlyConfigured(
                         "%r is not recognised as a model name." % label
@@ -110,7 +113,7 @@ def import_models(models=None, verbosity=1):
     # management command.
     from wagtail_airtable.management.commands.import_airtable import Importer
 
-    models = models or get_validated_models()
+    models = models or get_all_models(as_string=True)
     importer = Importer(models=models, options={"verbosity": verbosity})
     return importer.run()
 
