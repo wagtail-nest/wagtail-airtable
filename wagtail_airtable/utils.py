@@ -5,11 +5,12 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 
+from wagtail_airtable.management.commands.import_airtable import Importer
 from wagtail_airtable.mixins import AirtableMixin
 
 from wagtail.admin import messages
 
-WATAIL_AIRTABLE_ENABLED = getattr(settings, "WAGTAIL_AIRTABLE_ENABLED", False)
+WAGTAIL_AIRTABLE_ENABLED = getattr(settings, "WAGTAIL_AIRTABLE_ENABLED", False)
 
 
 def get_model_for_path(model_path):
@@ -92,11 +93,21 @@ def can_send_airtable_messages(instance) -> bool:
     # message error.
     # Otherwise assume a successful update happened on the Airtable row
     if (
-        WATAIL_AIRTABLE_ENABLED and issubclass(instance.__class__, AirtableMixin)
+        WAGTAIL_AIRTABLE_ENABLED and issubclass(instance.__class__, AirtableMixin)
         and hasattr(instance, "is_airtable_enabled") and instance.is_airtable_enabled
     ):
         return True
     return False
+
+def import_models(models=get_all_models(), verbosity=1):
+    """
+    Import models set in Wagtail Airtable settings
+
+    Supports a list of models if only a limited set of models need to be imported.
+    """
+    importer = Importer(models=models, options={"verbosity": verbosity})
+    created, skipped, updated = importer.run()
+    return created, skipped, updated
 
 
 def airtable_message(request, instance, message="Airtable record updated", button_text="View record in Airtable", buttons_enabled=True) -> None:
