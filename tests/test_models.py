@@ -12,7 +12,7 @@ class TestAirtableModel(TestCase):
     fixtures = ['test.json']
 
     def setUp(self):
-        self.client.login(username='admin', password='password')
+        self.airtable_client.login(username='admin', password='password')
         self.advert = Advert.objects.first()
 
     def test_model_connection_settings(self):
@@ -47,7 +47,7 @@ class TestAirtableModel(TestCase):
         self.assertEqual(type(mapped_import_fields), dict)
 
     def test_create_object_from_url(self):
-        response = self.client.post('/admin/snippets/tests/advert/add/', {
+        response = self.airtable_client.post('/admin/snippets/tests/advert/add/', {
             'title': 'Second advert',
             'description': 'Lorem ipsum dolor sit amet, consectetur adipisicing elit.',
             'rating': "1.5",

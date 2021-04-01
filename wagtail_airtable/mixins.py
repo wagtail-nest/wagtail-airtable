@@ -81,13 +81,13 @@ class AirtableMixin(models.Model):
                 and self.AIRTABLE_UNIQUE_IDENTIFIER
             ):
                 if not TESTING:
-                    self.client = Airtable(
+                    self.airtable_client = Airtable(
                         self.AIRTABLE_BASE_KEY,
                         self.AIRTABLE_TABLE_NAME,
                         api_key=settings.AIRTABLE_API_KEY,
                     )
                 else:
-                    self.client = MockAirtable(
+                    self.airtable_client = MockAirtable(
                         self.AIRTABLE_BASE_KEY,
                         self.AIRTABLE_TABLE_NAME,
                         api_key=settings.AIRTABLE_API_KEY,
@@ -161,7 +161,7 @@ class AirtableMixin(models.Model):
         if matched_record:
             record = self.update_record(matched_record)
         else:
-            record = self.client.insert(self.mapped_export_fields)
+            record = self.airtable_client.insert(self.mapped_export_fields)
 
         self.airtable_record_id = record["id"]
         return record
@@ -174,7 +174,7 @@ class AirtableMixin(models.Model):
         Returns a True/False response.
         """
         try:
-            record = self.client.get(airtable_record_id)
+            record = self.airtable_client.get(airtable_record_id)
         except HTTPError:
             record = {}
         return bool(record)
@@ -193,7 +193,7 @@ class AirtableMixin(models.Model):
         airtable_record_id = airtable_record_id or self.airtable_record_id
         if self.check_record_exists(airtable_record_id):
             # Record exists in Airtable
-            record = self.client.update(airtable_record_id, self.mapped_export_fields)
+            record = self.airtable_client.update(airtable_record_id, self.mapped_export_fields)
         else:
             # No record exists in Airtable. Create a new record now.
             record = self.create_record()
@@ -208,7 +208,7 @@ class AirtableMixin(models.Model):
         Returns True if the record is successfully deleted, otherwise False.
         """
         try:
-            response = self.client.delete(self.airtable_record_id)
+            response = self.airtable_client.delete(self.airtable_record_id)
             deleted = response["deleted"]
         except HTTPError:
             deleted = False
@@ -242,7 +242,7 @@ class AirtableMixin(models.Model):
             _airtable_unique_identifier = self.AIRTABLE_UNIQUE_IDENTIFIER
             value = getattr(self, _airtable_unique_identifier)
             airtable_column_name = self.AIRTABLE_UNIQUE_IDENTIFIER
-        records = self.client.search(airtable_column_name, value)
+        records = self.airtable_client.search(airtable_column_name, value)
         total_records = len(records)
         if total_records:
             # If more than 1 record was returned log a warning.
