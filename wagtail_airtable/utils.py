@@ -25,11 +25,12 @@ def get_model_for_path(model_path):
         return False
 
 
-def get_all_models() -> list:
+def get_all_models(as_string=False) -> list:
     """
     Gets all models from settings.AIRTABLE_IMPORT_SETTINGS.
 
     Returns a list of models.
+    Accepts an optionnal argument to return a list of models strings instead of a list of models.
     """
     airtable_settings = getattr(settings, "AIRTABLE_IMPORT_SETTINGS", {})
     validated_models = []

@@ -42,6 +42,10 @@ class TestUtilFunctions(TestCase):
         available_models = get_all_models()
         self.assertListEqual(available_models, [SimplePage, Advert, SimilarToAdvert])
 
+    def test_get_all_models_as_string(self):
+        available_models = get_all_models(as_string=True)
+        self.assertListEqual(available_models, ['tests.simplepage', 'tests.advert', 'tests.similartoadvert'])
+
     def test_can_send_airtable_messages(self):
         instance = Advert.objects.first()
         enabled = can_send_airtable_messages(instance)
