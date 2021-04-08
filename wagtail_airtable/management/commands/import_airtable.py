@@ -124,6 +124,8 @@ class Importer:
             "\t\t Serializer data was valid. Setting attrs on model..."
         )
         model = type(instance)
+        if is_wagtail_model:
+                before = instance.to_json()
         for field_name, value in serialized_data.validated_data.items():
             field_type = type(
                 model._meta.get_field(field_name)
@@ -148,7 +150,13 @@ class Importer:
             if is_wagtail_model:
                 self.debug_message("\t\t This is a Wagtail Page model")
                 # Wagtail page. Requires a .save_revision()
-                if not instance.locked:
+                if instance.locked:
+                    self.debug_message("\t\t\t Page IS locked. Skipping Page save.")
+                    self.skipped = self.skipped + 1
+                elif before == instance.to_json():
+                    self.debug_message("\t\t\t Page didn't change. Skipping Page save.")
+                    self.skipped = self.skipped + 1
+                else:
                     self.debug_message(
                         "\t\t\t Page is not locked. Saving page and creating a new revision."
                     )
@@ -157,9 +165,6 @@ class Importer:
                     instance.save()
                     instance.save_revision()
                     self.updated = self.updated + 1
-                else:
-                    self.debug_message("\t\t\t Page IS locked. Skipping Page save.")
-                    self.skipped = self.skipped + 1
             else:
                 # Django model. Save normally.
                 self.debug_message("\t\t Saving Django model")
