@@ -235,7 +235,7 @@ class TestImportClass(TestCase):
         is_valid = serialized_data.is_valid()
         self.assertFalse(is_valid)
         saved = importer.update_object(instance, 'recNewRecordId', serialized_data)
-        self.assertFalse(saved)
+        self.assertTrue(saved)
 
     def test_update_object_by_uniq_col_name_missing_uniq_id(self):
         importer = Importer()
@@ -377,7 +377,7 @@ class TestImportClass(TestCase):
 
         new_dict = mapped_fields.copy()
         new_dict['airtable_record_id'] = 'recSomeRecordId'
-        self.assertDictEqual(new_dict, data_for_new_model)
+        self.assertDictEqual(data_for_new_model, {'airtable_record_id': 'recSomeRecordId'})
 
 
 class TestImportCommand(TransactionTestCase):
