@@ -120,77 +120,67 @@ class Importer:
         Returns a bool that determines if the object was updated or not.
         """
 
-        if serialized_data.is_valid():
-            self.debug_message(
-                "\t\t Serializer data was valid. Setting attrs on model..."
-            )
-            model = type(instance)
-            for field_name, value in serialized_data.validated_data.items():
-                field_type = type(
-                    model._meta.get_field(field_name)
-                )  # ie. django.db.models.fields.CharField
-                # If this field type is a subclass of a known Wagtail Tag, or a Django m2m field
-                # We need to loop through all the values and add them to the m2m-style field.
-                if issubclass(
-                    field_type,
-                    (TaggableManager, ClusterTaggableManager, models.ManyToManyField,),
-                ):
-                    m2m_field = getattr(instance, field_name)
-                    for m2m_value in value:
-                        m2m_field.add(m2m_value)
-                else:
-                    setattr(instance, field_name, value)
-            # When an object is saved it should NOT push its newly saved data back to Airtable.
-            # This could theoretically cause a loop. By default this setting is True. But the
-            # below line confirms it's false, just to be safe.
-            instance.airtable_record_id = record_id
-            instance.push_to_airtable = False
-            try:
-                if is_wagtail_model:
-                    self.debug_message("\t\t This is a Wagtail Page model")
-                    # Wagtail page. Requires a .save_revision()
-                    if not instance.locked:
-                        self.debug_message(
-                            "\t\t\t Page is not locked. Saving page and creating a new revision."
-                        )
-                        # Only save the page if the page is not locked
-                        instance._skip_signals=True
-                        instance.save()
-                        instance.save_revision()
-                        self.updated = self.updated + 1
-                    else:
-                        self.debug_message("\t\t\t Page IS locked. Skipping Page save.")
-                        self.skipped = self.skipped + 1
-                else:
-                    # Django model. Save normally.
-                    self.debug_message("\t\t Saving Django model")
+        self.debug_message(
+            "\t\t Serializer data was valid. Setting attrs on model..."
+        )
+        model = type(instance)
+        for field_name, value in serialized_data.validated_data.items():
+            field_type = type(
+                model._meta.get_field(field_name)
+            )  # ie. django.db.models.fields.CharField
+            # If this field type is a subclass of a known Wagtail Tag, or a Django m2m field
+            # We need to loop through all the values and add them to the m2m-style field.
+            if issubclass(
+                field_type,
+                (TaggableManager, ClusterTaggableManager, models.ManyToManyField,),
+            ):
+                m2m_field = getattr(instance, field_name)
+                for m2m_value in value:
+                    m2m_field.add(m2m_value)
+            else:
+                setattr(instance, field_name, value)
+        # When an object is saved it should NOT push its newly saved data back to Airtable.
+        # This could theoretically cause a loop. By default this setting is True. But the
+        # below line confirms it's false, just to be safe.
+        instance.airtable_record_id = record_id
+        instance.push_to_airtable = False
+        try:
+            if is_wagtail_model:
+                self.debug_message("\t\t This is a Wagtail Page model")
+                # Wagtail page. Requires a .save_revision()
+                if not instance.locked:
+                    self.debug_message(
+                        "\t\t\t Page is not locked. Saving page and creating a new revision."
+                    )
+                    # Only save the page if the page is not locked
                     instance._skip_signals=True
                     instance.save()
+                    instance.save_revision()
                     self.updated = self.updated + 1
+                else:
+                    self.debug_message("\t\t\t Page IS locked. Skipping Page save.")
+                    self.skipped = self.skipped + 1
+            else:
+                # Django model. Save normally.
+                self.debug_message("\t\t Saving Django model")
+                instance._skip_signals=True
+                instance.save()
+                self.updated = self.updated + 1
 
-                # New record being processed. Save it to the list of records.
-                self.records_used.append(record_id)
-                # Object updated (and record was used)
-                return True
-            except ValidationError as error:
-                self.skipped = self.skipped + 1
-                error_message = "; ".join(error.messages)
-                logger.error(
-                    f"Unable to save {instance._meta.label} -> '{instance}'. Error(s): {error_message}"
-                )
-                self.debug_message(
-                    f"\t\t Could not save Wagtail/Django model. Error: {error_message}"
-                )
-        else:
-            logger.info(f"Invalid data for record {record_id}")
-            self.debug_message(
-                f"\t\t Serializer was invalid for record: {record_id}, model id: {instance.pk}"
+            # New record being processed. Save it to the list of records.
+            self.records_used.append(record_id)
+            # Object updated (and record was used)
+            return True
+        except ValidationError as error:
+            self.skipped = self.skipped + 1
+            error_message = "; ".join(error.messages)
+            logger.error(
+                f"Unable to save {instance._meta.label} -> '{instance}'. Error(s): {error_message}"
             )
             self.debug_message(
-                "\t\t Continuing to look for object by its unique identifier"
+                f"\t\t Could not save Wagtail/Django model. Error: {error_message}"
             )
-        # Not updated.
-        return False
+            return False
 
     def update_object_by_uniq_col_name(
         self,
@@ -223,68 +213,63 @@ class Importer:
 
             if instance:
                 # A local model object was found by a unique identifier.
-                if serialized_data.is_valid():
-                    for field_name, value in serialized_data.validated_data.items():
-                        field_type = type(
-                            model._meta.get_field(field_name)
-                        )  # ie. django.db.models.fields.CharField
-                        # If this field type is a subclass of a known Wagtail Tag, or a Django m2m field
-                        # We need to loop through all the values and add them to the m2m-style field.
-                        if issubclass(
-                            field_type,
-                            (
-                                TaggableManager,
-                                ClusterTaggableManager,
-                                models.ManyToManyField,
-                            ),
-                        ):
-                            m2m_field = getattr(instance, field_name)
-                            for m2m_value in value:
-                                m2m_field.add(m2m_value)
-                        else:
-                            setattr(instance, field_name, value)
-                    # When an object is saved it should NOT push its newly saved data back to Airtable.
-                    # This could theoretically cause a loop. By default this setting is False. But the
-                    # below line confirms it's false, just to be safe.
-                    instance.airtable_record_id = record_id
-                    instance.push_to_airtable = False
-                    try:
-                        if is_wagtail_model:
-                            # Wagtail page. Requires a .save_revision()
-                            if not instance.locked:
-                                # Only save the page if the page is not locked
-                                instance._skip_signals=True
-                                instance.save()
-                                instance.save_revision()
-                                self.updated = self.updated + 1
-                            else:
-                                self.debug_message(
-                                    "\t\t\t Page IS locked. Skipping Page save."
-                                )
-                                self.skipped = self.skipped + 1
-                        else:
-                            # Django model. Save normally.
+                for field_name, value in serialized_data.validated_data.items():
+                    field_type = type(
+                        model._meta.get_field(field_name)
+                    )  # ie. django.db.models.fields.CharField
+                    # If this field type is a subclass of a known Wagtail Tag, or a Django m2m field
+                    # We need to loop through all the values and add them to the m2m-style field.
+                    if issubclass(
+                        field_type,
+                        (
+                            TaggableManager,
+                            ClusterTaggableManager,
+                            models.ManyToManyField,
+                        ),
+                    ):
+                        m2m_field = getattr(instance, field_name)
+                        for m2m_value in value:
+                            m2m_field.add(m2m_value)
+                    else:
+                        setattr(instance, field_name, value)
+                # When an object is saved it should NOT push its newly saved data back to Airtable.
+                # This could theoretically cause a loop. By default this setting is False. But the
+                # below line confirms it's false, just to be safe.
+                instance.airtable_record_id = record_id
+                instance.push_to_airtable = False
+                try:
+                    if is_wagtail_model:
+                        # Wagtail page. Requires a .save_revision()
+                        if not instance.locked:
+                            # Only save the page if the page is not locked
                             instance._skip_signals=True
                             instance.save()
-                            self.debug_message("\t\t\t Saved!")
+                            instance.save_revision()
                             self.updated = self.updated + 1
+                        else:
+                            self.debug_message(
+                                "\t\t\t Page IS locked. Skipping Page save."
+                            )
+                            self.skipped = self.skipped + 1
+                    else:
+                        # Django model. Save normally.
+                        instance._skip_signals=True
+                        instance.save()
+                        self.debug_message("\t\t\t Saved!")
+                        self.updated = self.updated + 1
 
-                        # Record this record as "used"
-                        self.records_used.append(record_id)
-                        # New record being processed. Save it to the list of records.
-                        return True
-                    except ValidationError as error:
-                        error_message = "; ".join(error.messages)
-                        logger.error(
-                            f"Unable to save {instance}. Error(s): {error_message}"
-                        )
-                        self.debug_message(
-                            f"\t\t Unable to save {instance} (ID: {instance.pk}; Airtable Record ID: {record_id}). Reason: {error_message}"
-                        )
-                        self.skipped = self.skipped + 1
-                else:
-                    logger.info(f"Invalid data for record {record_id}")
-                    self.debug_message("\t\t Serializer data was invalid.")
+                    # Record this record as "used"
+                    self.records_used.append(record_id)
+                    # New record being processed. Save it to the list of records.
+                    return True
+                except ValidationError as error:
+                    error_message = "; ".join(error.messages)
+                    logger.error(
+                        f"Unable to save {instance}. Error(s): {error_message}"
+                    )
+                    self.debug_message(
+                        f"\t\t Unable to save {instance} (ID: {instance.pk}; Airtable Record ID: {record_id}). Reason: {error_message}"
+                    )
                     self.skipped = self.skipped + 1
             else:
                 # No object was found by this unique ID.
@@ -311,15 +296,7 @@ class Importer:
         return False
 
     def get_data_for_new_model(self, serialized_data, mapped_import_fields, record_id):
-
-        # Check if we can use the serialized data to create a new model.
-        # If we can, great! If not, fall back to the original mapped_import_fields
-        # If this has to fall back to the original mapped_import_fields: failure
-        # to create a model will be higher than normal.
-        if serialized_data.is_valid():
-            data_for_new_model = dict(serialized_data.validated_data)
-        else:
-            data_for_new_model = mapped_import_fields
+        data_for_new_model = serialized_data.validated_data.copy()
         data_for_new_model["airtable_record_id"] = record_id
 
         # First things first, remove any "pk" or "id" items from the mapped_import_fields
@@ -338,7 +315,6 @@ class Importer:
         return data_for_new_model
 
     def run(self):
-
         models = get_validated_models(models=self.models)
         self.debug_message(f"Validated models: {models}")
 
@@ -417,7 +393,14 @@ class Importer:
                     record_fields, model.map_import_fields()
                 )
                 serialized_data = model_serializer(data=mapped_import_fields)
-                serialized_data.is_valid()
+
+                if not serialized_data.is_valid():
+                    logger.warn("Failed to import %s", record_id)
+                    self.debug_message(
+                        f"\n\t Failed to import {record_id}: {serialized_data.errors}"
+                    )
+                    self.skipped += 1
+                    continue
 
                 # Look for a record by its airtable_record_id.
                 # If it exists, update the data.
