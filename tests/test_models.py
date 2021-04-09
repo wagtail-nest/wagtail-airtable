@@ -12,7 +12,7 @@ class TestAirtableModel(TestCase):
     fixtures = ['test.json']
 
     def setUp(self):
-        self.airtable_client.login(username='admin', password='password')
+        self.client.login(username='admin', password='password')
         self.advert = Advert.objects.first()
 
     def test_model_connection_settings(self):
@@ -47,7 +47,7 @@ class TestAirtableModel(TestCase):
         self.assertEqual(type(mapped_import_fields), dict)
 
     def test_create_object_from_url(self):
-        response = self.airtable_client.post('/admin/snippets/tests/advert/add/', {
+        response = self.client.post('/admin/snippets/tests/advert/add/', {
             'title': 'Second advert',
             'description': 'Lorem ipsum dolor sit amet, consectetur adipisicing elit.',
             'rating': "1.5",
@@ -59,7 +59,7 @@ class TestAirtableModel(TestCase):
         self.assertFalse(advert._ran_airtable_setup)
         self.assertFalse(advert._is_enabled)
         self.assertFalse(advert._push_to_airtable)
-        self.assertFalse(hasattr(advert, 'client'))
+        self.assertFalse(hasattr(advert, 'airtable_client'))
 
         advert.setup_airtable()
 
@@ -69,7 +69,7 @@ class TestAirtableModel(TestCase):
         self.assertTrue(advert._ran_airtable_setup)
         self.assertTrue(advert._is_enabled)
         self.assertTrue(advert._push_to_airtable)
-        self.assertTrue(hasattr(advert, 'client'))
+        self.assertTrue(hasattr(advert, 'airtable_client'))
 
     def test_edit_object(self):
         advert = Advert.objects.create(
@@ -87,7 +87,7 @@ class TestAirtableModel(TestCase):
         advert.title = "Edited title"
         advert.description = "Edited description"
         advert.save()
-        advert.client.update.assert_called()
+        advert.airtable_client.update.assert_called()
         self.assertTrue(advert._ran_airtable_setup)
         self.assertTrue(advert._is_enabled)
         self.assertTrue(advert._push_to_airtable)
@@ -95,7 +95,7 @@ class TestAirtableModel(TestCase):
 
     def test_delete_object(self):
         advert = Advert.objects.get(slug='delete-me')
-        # If we werent mocking the Airtable.update() method, we'd assert advert.client.insert
+        # If we werent mocking the Airtable.update() method, we'd assert advert.airtable_client.insert
         self.assertEqual(advert.airtable_record_id, 'recNewRecordId')
         advert.delete()
         find_deleted_advert = Advert.objects.filter(slug='delete-me').count()
@@ -113,7 +113,7 @@ class TestAirtableMixin(TestCase):
         self.assertEqual(advert._ran_airtable_setup, False)
         self.assertEqual(advert._is_enabled, False)
         self.assertEqual(advert._push_to_airtable, False)
-        self.assertFalse(hasattr(advert, 'client'))
+        self.assertFalse(hasattr(advert, 'airtable_client'))
 
         advert.setup_airtable()
 
@@ -123,7 +123,7 @@ class TestAirtableMixin(TestCase):
         self.assertEqual(advert._ran_airtable_setup, True)
         self.assertEqual(advert._is_enabled, True)
         self.assertEqual(advert._push_to_airtable, True)
-        self.assertTrue(hasattr(advert, 'client'))
+        self.assertTrue(hasattr(advert, 'airtable_client'))
 
     def test_create_and_attach_airtable_record(self):
         advert = copy(self.advert)
@@ -132,8 +132,8 @@ class TestAirtableMixin(TestCase):
         advert.setup_airtable()
         advert.save()
 
-        advert.client.update.assert_called()
-        advert.client.insert.assert_not_called()
+        advert.airtable_client.update.assert_called()
+        advert.airtable_client.insert.assert_not_called()
         self.assertEqual(advert.airtable_record_id, 'recNewRecordId')
 
     def test_update_record(self):
@@ -141,8 +141,8 @@ class TestAirtableMixin(TestCase):
         advert.setup_airtable()
         self.assertEqual(advert.airtable_record_id, '')
         record = advert.update_record('fake record id')
-        advert.client.update.assert_called()
-        advert.client.insert.assert_not_called()
+        advert.airtable_client.update.assert_called()
+        advert.airtable_client.insert.assert_not_called()
         self.assertEqual(record['id'], 'recNewRecordId')
         self.assertEqual(advert.airtable_record_id, 'recNewRecordId')
 
@@ -151,7 +151,7 @@ class TestAirtableMixin(TestCase):
         advert.setup_airtable()
         deleted = advert.delete_record()
         self.assertTrue(deleted)
-        advert.client.delete.assert_called()
+        advert.airtable_client.delete.assert_called()
 
     def test_parse_request_error(self):
         error_401 = "401 Client Error: Unauthorized for url: https://api.airtable.com/v0/appYourAppId/Your%20Table?filterByFormula=.... [Error: {'type': 'AUTHENTICATION_REQUIRED', 'message': 'Authentication required'}]"
@@ -177,14 +177,14 @@ class TestAirtableMixin(TestCase):
         advert.setup_airtable()
         record_id = advert.match_record()
         self.assertEqual(record_id, 'recNewRecordId')
-        advert.client.search.assert_called()
+        advert.airtable_client.search.assert_called()
 
     def test_check_record_exists(self):
         advert = copy(self.advert)
         advert.setup_airtable()
         record_exists = advert.check_record_exists('recNewRecordId')
         self.assertTrue(record_exists)
-        advert.client.get.assert_called()
+        advert.airtable_client.get.assert_called()
 
     def test_is_airtable_enabled(self):
         advert = copy(self.advert)
@@ -210,8 +210,8 @@ class TestAirtableMixin(TestCase):
 
         advert.save()
         self.assertEqual(advert.airtable_record_id, 'recNewRecordId')
-        advert.client.update.assert_called()
-        advert.client.insert.assert_not_called()
+        advert.airtable_client.update.assert_called()
+        advert.airtable_client.insert.assert_not_called()
 
     def test_delete(self):
         advert = copy(self.advert)
@@ -219,5 +219,5 @@ class TestAirtableMixin(TestCase):
 
         deleted = advert.delete_record()
         self.assertTrue(deleted)
-        advert.client.delete.assert_called()
+        advert.airtable_client.delete.assert_called()
 

@@ -12,7 +12,7 @@ class TestUtilFunctions(TestCase):
     fixtures = ['test.json']
 
     def setUp(self):
-        self.airtable_client.login(username='admin', password='password')
+        self.client.login(username='admin', password='password')
 
     def test_get_model_for_path(self):
         advert_model = get_model_for_path("tests.Advert")
@@ -54,7 +54,7 @@ class TestUtilFunctions(TestCase):
 
     def test_airtable_messages(self):
         instance = Advert.objects.first()
-        response = self.airtable_client.get('/admin/login/')
+        response = self.client.get('/admin/login/')
         request = response.wsgi_request
         result = airtable_message(request, instance, message="Custom message here", button_text="Custom button text")
         self.assertEqual(result, None)
