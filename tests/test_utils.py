@@ -1,8 +1,11 @@
+from unittest.mock import patch
+
 from django.contrib.messages import get_messages
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.test import TestCase
 
-from wagtail_airtable.utils import airtable_message, can_send_airtable_messages, get_model_for_path, get_all_models, get_validated_models
+from wagtail_airtable.utils import airtable_message, can_send_airtable_messages, get_model_for_path, get_all_models, get_validated_models, import_models
+from wagtail_airtable.management.commands.import_airtable import Importer
 
 from tests.models import Advert, ModelNotUsed, SimilarToAdvert, SimplePage
 from tests.serializers import AdvertSerializer
@@ -42,6 +45,10 @@ class TestUtilFunctions(TestCase):
         available_models = get_all_models()
         self.assertListEqual(available_models, [SimplePage, Advert, SimilarToAdvert])
 
+    def test_get_all_models_as_path(self):
+        available_models = get_all_models(as_path=True)
+        self.assertListEqual(available_models, ['tests.simplepage', 'tests.advert', 'tests.similartoadvert'])
+
     def test_can_send_airtable_messages(self):
         instance = Advert.objects.first()
         enabled = can_send_airtable_messages(instance)
@@ -71,3 +78,28 @@ class TestUtilFunctions(TestCase):
         message2 = messages[1].message
         self.assertIn('Second custom message here', message2)
         self.assertIn('2nd custom button text', message2)
+
+    @patch.object(Importer, '__init__')
+    def test_import_models_without_arguments(self, mock):
+        try:
+            import_models()
+        except:
+            # Do nothing here for now, just fail silently
+            pass
+
+        self.assertTrue(mock.called)
+        # Ensure that the constructor with all models.
+        mock.assert_called_with(models=get_all_models(as_path=True), options={"verbosity": 1})
+
+    @patch.object(Importer, '__init__')
+    def test_import_models_with_arguments(self, mock):
+        mock.return_value = None
+        try:
+            import_models(models=[Advert], verbosity=2)
+        except:
+            # Do nothing here for now, just fail silently
+            pass
+
+        self.assertTrue(mock.called)
+        # Ensure that the constructor with specified arguments
+        mock.assert_called_with(models=["tests.advert"], options={"verbosity": 2})
