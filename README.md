@@ -23,7 +23,7 @@ This package will attempt to match a model object against row in Airtable using 
 * Add `'wagtail_airtable'` to your project's `INSTALLED_APPS`.
     * To enable the snippet-specific import button on the Snippet list view make sure `wagtail_airtable` is above `wagtail.snippets` in your `INSTALLED_APPS`
 * In your settings you will need to map Django models to Airtable settings. Every model you want to map to an Airtable sheet will need:
-    * An `AIRTABLE_BASE_KEY`. You can find the base key in the [https://airtable.com/api](Airtable API docs) when you're signed in to Airtable.com
+    * An `AIRTABLE_BASE_KEY`. You can find the base key in the [Airtable API docs](https://airtable.com/api) when you're signed in to Airtable.com
     * An `AIRTABLE_TABLE_NAME` to determine which table to connect to.
     * An `AIRTABLE_UNIQUE_IDENTIFIER`. This can either be a string or a dictionary mapping the Airtable column name to your unique field in your model.
         * ie. `AIRTABLE_UNIQUE_IDENTIFIER: 'slug',` this will match the `slug` field on your model with the `slug` column name in Airtable. Use this option if your model field and your Airtable column name are identical.
@@ -169,7 +169,7 @@ if you don't do these checks on your signal, the save will run normally.
 Because Airtable doesn't provide a testing environment, you'll need to test against a live table. The best way to do this is to copy your live table to a new table (renaming it will help avoid naming confusion), and update your local settings. With this method, you can test to everything safely against a throw-away Airtable. Should something become broken beyond repair, delete the testing table and re-copy the original one.
 
 ### Local debugging
-Due to the complexity and fragility of connecting Wagtail and Airtable (because an Airtable column can be almost any value) you may need some help debugging your setup. To turn on higher verbosity output, you can enable the Airtable debug setting `WAGTAIL_AIRTABLE_DEBUG = True`. All this does is increase the default verbosity when running the management command. In a standard Django management command you could run `python manage.py import_airtable appname.ModelName --verbosty=2` however when you import from Airtable using the Wagtail admin import page you won't have access to this verbosity argument. But enabling `WAGTAIL_AIRTABLE_DEBUG` you can manually increase the verbosity.
+Due to the complexity and fragility of connecting Wagtail and Airtable (because an Airtable column can be almost any value) you may need some help debugging your setup. To turn on higher verbosity output, you can enable the Airtable debug setting `WAGTAIL_AIRTABLE_DEBUG = True`. All this does is increase the default verbosity when running the management command. In a standard Django management command you could run `python manage.py import_airtable appname.ModelName --verbosity=2` however when you import from Airtable using the Wagtail admin import page you won't have access to this verbosity argument. But enabling `WAGTAIL_AIRTABLE_DEBUG` you can manually increase the verbosity.
 
 > **Note**: This only only work while `DEBUG = True` in your settings as to not accidentally flood your production logs.
 
