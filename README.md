@@ -139,6 +139,24 @@ Once your settings are ready, you can start creating new Pages in Airtable and i
 
 **Caveats**: In the above code we see `{'Wagtail Page ID': 'pk',}`, this means there's a column in Airtable named "Wagtail Page ID" and it mapped to a Page pk. When you create a new Wagtail Page inside of an Airtable sheet, _keep this cell blank in your new row_. It will auto-update when it gets imported. This happens because Airtable (and the editors) likely don't know what the new Page ID is going to be, so we let Wagtail set it, and then update the Airtable again.
 
+### Hooks
+Hooks are a way to execute code once an action has happened. This mimics (and internally uses) Wagtail's hook feature.
+
+> **Note**: When using hooks it will add processing time to your requests. If you're using Heroku with a 30s timeout you may want to using a management command to avoid hitting a server timeout.
+
+##### Updated record
+To take an action when a record is updated, you can write  hook like this in your wagtail_hooks.py file:
+
+```python
+@hooks.register('airtable_import_record_updated')
+def airtable_record_updated(instance, is_wagtail_page, record_id):
+    # Instance is the page or model instance
+    # is_wagtail_page is a boolean to determine if the object is a wagtail page. This is a shortcut for `isinstance(instance, wagtail.core.models.Page)`
+    # record_id is the wagtail record ID. You can use this to perform additional actions against Airtable using the airtable-python-wrapper package.
+    pass
+```
+
+
 ### Management Commands
 
 ```bash
