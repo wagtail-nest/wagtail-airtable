@@ -83,6 +83,10 @@ AIRTABLE_IMPORT_SETTINGS = {
         # If you choose option #1 (callable) or option #2 (path to a function)
         # Your function needs to return an integer which will represent the Parent
         # Page ID where all imported pages will be created as child pages.
+        # The path to a function takes an `instance` parameter such as
+        #   def myfunction(instance=None):
+        #       if instance and isinstance(instance, Page):
+        #           return Page.objects.get(pk=instance.id).get_parent()
         'PARENT_PAGE_ID': 'path.to.function',
         # The `AUTO_PUBLISH_NEW_PAGES` setting will tell this package to either
         # Automatically publish a newly created page, or set to draft.
@@ -155,7 +159,6 @@ def airtable_record_updated(instance, is_wagtail_page, record_id):
     # record_id is the wagtail record ID. You can use this to perform additional actions against Airtable using the airtable-python-wrapper package.
     pass
 ```
-
 
 ### Management Commands
 
