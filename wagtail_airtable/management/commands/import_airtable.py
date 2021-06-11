@@ -147,10 +147,13 @@ class Importer:
             else:
                 setattr(instance, field_name, value)
 
-        if instance.revisions.count():
-            before = instance.revisions.last().content_json
-        else:
-            before = instance.to_json()
+        try:
+            if instance.revisions.count():
+                before = instance.revisions.last().content_json
+            else:
+                before = instance.to_json()
+        except AttributeError:
+            before = {}
 
         # When an object is saved it should NOT push its newly saved data back to Airtable.
         # This could theoretically cause a loop. By default this setting is True. But the
