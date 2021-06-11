@@ -6,7 +6,6 @@ from django.db import models, IntegrityError
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand
-from django.utils.text import slugify
 
 from logging import getLogger
 
@@ -175,14 +174,14 @@ class Importer:
                         "\t\t\t Page is not locked. Saving page and creating a new revision."
                     )
                     # Only save the page if the page is not locked
-                    instance._skip_signals=True
+                    instance._skip_signals = True
                     instance.save()
                     instance.save_revision()
                     self.updated = self.updated + 1
             else:
                 # Django model. Save normally.
                 self.debug_message("\t\t Saving Django model")
-                instance._skip_signals=True
+                instance._skip_signals = True
                 instance.save()
                 self.updated = self.updated + 1
 
@@ -262,7 +261,7 @@ class Importer:
                         # Wagtail page. Requires a .save_revision()
                         if not instance.locked:
                             # Only save the page if the page is not locked
-                            instance._skip_signals=True
+                            instance._skip_signals = True
                             instance.save()
                             instance.save_revision()
                             self.updated = self.updated + 1
@@ -275,7 +274,7 @@ class Importer:
                             self.skipped = self.skipped + 1
                     else:
                         # Django model. Save normally.
-                        instance._skip_signals=True
+                        instance._skip_signals = True
                         instance.save()
                         self.debug_message("\t\t\t Saved!")
                         self.updated = self.updated + 1
@@ -364,10 +363,7 @@ class Importer:
                 airtable_settings.get("AIRTABLE_UNIQUE_IDENTIFIER")
             )
 
-            if (
-                not airtable_unique_identifier_field_name
-                and not airtable_unique_identifier_column_name
-            ):
+            if not airtable_unique_identifier_field_name and not airtable_unique_identifier_column_name:
                 logger.error("No unique columns are set in your Airtable configuration")
                 continue
 
@@ -539,8 +535,8 @@ class Importer:
                 try:
                     self.debug_message("\t\t Attempting to create a new Page...")
                     new_model = model(**data_for_new_model)
-                    new_model._skip_signals=True
-                except Exception as e:
+                    new_model._skip_signals = True
+                except Exception:
                     self.debug_message("\tCannot load serialized data into model")
                     self.skipped = self.skipped + 1
                     continue
@@ -608,7 +604,6 @@ class Importer:
                     # Instance was updated, trigger an update hook.
                     for fn in hooks.get_hooks('airtable_import_record_updated'):
                         fn(instance=new_model, is_wagtail_page=is_wagtail_model, record_id=record_id)
-
 
         return self.created, self.skipped, self.updated
 
