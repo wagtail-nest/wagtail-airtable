@@ -6,9 +6,14 @@ from django.db import models, IntegrityError
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand
+
 from logging import getLogger
+
 from modelcluster.contrib.taggit import ClusterTaggableManager
+
 from taggit.managers import TaggableManager
+
+from wagtail.core import hooks
 from wagtail.core.models import Page
 
 from wagtail_airtable.tests import MockAirtable
@@ -124,8 +129,7 @@ class Importer:
             "\t\t Serializer data was valid. Setting attrs on model..."
         )
         model = type(instance)
-        if is_wagtail_model:
-                before = instance.to_json()
+
         for field_name, value in serialized_data.validated_data.items():
             field_type = type(
                 model._meta.get_field(field_name)
@@ -141,6 +145,15 @@ class Importer:
                     m2m_field.add(m2m_value)
             else:
                 setattr(instance, field_name, value)
+
+        try:
+            if instance.revisions.count():
+                before = instance.revisions.last().content_json
+            else:
+                before = instance.to_json()
+        except AttributeError:
+            before = {}
+
         # When an object is saved it should NOT push its newly saved data back to Airtable.
         # This could theoretically cause a loop. By default this setting is True. But the
         # below line confirms it's false, just to be safe.
@@ -161,21 +174,20 @@ class Importer:
                         "\t\t\t Page is not locked. Saving page and creating a new revision."
                     )
                     # Only save the page if the page is not locked
-                    instance._skip_signals=True
+                    instance._skip_signals = True
                     instance.save()
                     instance.save_revision()
                     self.updated = self.updated + 1
             else:
                 # Django model. Save normally.
                 self.debug_message("\t\t Saving Django model")
-                instance._skip_signals=True
+                instance._skip_signals = True
                 instance.save()
                 self.updated = self.updated + 1
 
             # New record being processed. Save it to the list of records.
-            self.records_used.append(record_id)
             # Object updated (and record was used)
-            return True
+            self.records_used.append(record_id)
         except ValidationError as error:
             self.skipped = self.skipped + 1
             error_message = "; ".join(error.messages)
@@ -186,6 +198,8 @@ class Importer:
                 f"\t\t Could not save Wagtail/Django model. Error: {error_message}"
             )
             return False
+
+        return True
 
     def update_object_by_uniq_col_name(
         self,
@@ -247,10 +261,12 @@ class Importer:
                         # Wagtail page. Requires a .save_revision()
                         if not instance.locked:
                             # Only save the page if the page is not locked
-                            instance._skip_signals=True
+                            instance._skip_signals = True
                             instance.save()
                             instance.save_revision()
                             self.updated = self.updated + 1
+                            for fn in hooks.get_hooks('airtable_import_record_updated'):
+                                fn(instance=instance, is_wagtail_page=is_wagtail_model, record_id=record_id)
                         else:
                             self.debug_message(
                                 "\t\t\t Page IS locked. Skipping Page save."
@@ -258,15 +274,18 @@ class Importer:
                             self.skipped = self.skipped + 1
                     else:
                         # Django model. Save normally.
-                        instance._skip_signals=True
+                        instance._skip_signals = True
                         instance.save()
                         self.debug_message("\t\t\t Saved!")
                         self.updated = self.updated + 1
 
                     # Record this record as "used"
                     self.records_used.append(record_id)
+                    for fn in hooks.get_hooks('airtable_import_record_updated'):
+                        fn(instance=instance, is_wagtail_page=is_wagtail_model, record_id=record_id)
                     # New record being processed. Save it to the list of records.
                     return True
+
                 except ValidationError as error:
                     error_message = "; ".join(error.messages)
                     logger.error(
@@ -308,10 +327,7 @@ class Importer:
         # This will let Django and Wagtail handle the PK on its own, as it should.
         # When the model is saved it'll trigger a push to Airtable and automatically update
         # the necessary column with the new PK so it's always accurate.
-        for key in (
-            "pk",
-            "id",
-        ):
+        for key in ("pk", "id",):
             try:
                 del data_for_new_model[key]
             except KeyError:
@@ -347,10 +363,7 @@ class Importer:
                 airtable_settings.get("AIRTABLE_UNIQUE_IDENTIFIER")
             )
 
-            if (
-                not airtable_unique_identifier_field_name
-                and not airtable_unique_identifier_column_name
-            ):
+            if not airtable_unique_identifier_field_name and not airtable_unique_identifier_column_name:
                 logger.error("No unique columns are set in your Airtable configuration")
                 continue
 
@@ -391,7 +404,6 @@ class Importer:
                 if record["id"] in self.records_used:
                     continue
 
-
                 record_id = record["id"]
                 record_fields = record["fields"]
                 mapped_import_fields = self.convert_mapped_fields(
@@ -399,8 +411,12 @@ class Importer:
                 )
                 serialized_data = model_serializer(data=mapped_import_fields)
 
-                if not serialized_data.is_valid():
+                try:
+                    serialized_data.is_valid(raise_exception=True)
+                except Exception as e:
+                    error_type = type(e)
                     logger.warn("Failed to import %s", record_id)
+                    self.debug_message(f"{error_type}: {e}")
                     self.debug_message(
                         f"\n\t Failed to import {record_id}: {serialized_data.errors}"
                     )
@@ -428,7 +444,6 @@ class Importer:
                         ob.airtable_record_id = ""
                         ob.save()
 
-
                 if obj:
                     # Model object was found by it's airtable_record_id
                     was_updated = self.update_object(
@@ -439,6 +454,9 @@ class Importer:
                     )
                     # Object was updated. No need to continue through the rest of this function
                     if was_updated:
+                        # Instance was updated, trigger an update hook.
+                        for fn in hooks.get_hooks('airtable_import_record_updated'):
+                            fn(instance=obj, is_wagtail_page=is_wagtail_model, record_id=record_id)
                         continue
 
                 # This `unique_identifier` is the value of an Airtable record.
@@ -447,9 +465,7 @@ class Importer:
                 #         'Slug': 'your-model'
                 #   }
                 # This will return 'your-model' and can now be searched for as model.objects.get(slug='your-model')
-                unique_identifier = record_fields.get(
-                    airtable_unique_identifier_column_name, None
-                )
+                unique_identifier = record_fields.get(airtable_unique_identifier_column_name, None)
                 was_updated = self.update_object_by_uniq_col_name(
                     field_mapping={
                         airtable_unique_identifier_field_name: unique_identifier
@@ -460,6 +476,9 @@ class Importer:
                     is_wagtail_model=is_wagtail_model,
                 )
                 if was_updated:
+                    # Instance was updated, trigger an update hook.
+                    for fn in hooks.get_hooks('airtable_import_record_updated'):
+                        fn(instance=obj, is_wagtail_page=is_wagtail_model, record_id=record_id)
                     continue
 
                 # Look for the a PARENT_PAGE_ID setting and hopefully find a corresponding
@@ -480,14 +499,14 @@ class Importer:
                         # Check if the PARENT_PAGE_ID is a callable, string location to a function, or an int ID.
                         if callable(parent_page_id_setting):
                             # A function was passed into the settings. Execute it.
-                            parent_page_id = parent_page_id_setting()
+                            parent_page_id = parent_page_id_setting(instance=obj)
                         elif isinstance(parent_page_id_setting, str):
                             # A string location was passed into the settings
                             # Parse the string function location and execute it
                             location, function_name = parent_page_id_setting.rsplit(".", 1)
                             module = import_module(location)
                             parent_page_callable = getattr(module, function_name)
-                            parent_page_id = parent_page_callable()
+                            parent_page_id = parent_page_callable(instance=obj)
                         else:
                             # This should be an integer representing the Parent Page to nest pages under
                             parent_page_id = parent_page_id_setting
@@ -516,7 +535,14 @@ class Importer:
                 try:
                     self.debug_message("\t\t Attempting to create a new Page...")
                     new_model = model(**data_for_new_model)
-                    new_model._skip_signals=True
+                    new_model._skip_signals = True
+                except Exception:
+                    self.debug_message("\tCannot load serialized data into model")
+                    self.skipped = self.skipped + 1
+                    continue
+
+                import_successful = False
+                try:
                     # `parent_page` is either None or a Page instance.
                     if parent_page:
                         # Pages are not live by default, and always have unpublished changes.
@@ -537,7 +563,15 @@ class Importer:
                     else:
                         new_model.save()
                         self.debug_message("\t\t Object created")
+                    import_successful = True
                     self.created = self.created + 1
+                except ValidationError as e:
+                    logger.info(
+                        f"Could not create new model object. Validation Error: {e}"
+                    )
+                    self.debug_message(
+                        f"\t\t Could not create new model object. Validation Error: {e}"
+                    )
                 except ValueError as value_error:
                     logger.info(
                         f"Could not create new model object. Value Error: {value_error}"
@@ -564,8 +598,12 @@ class Importer:
                         f"Unhandled error. Could not create a new object for {model._meta.verbose_name}. Error: {e}"
                     )
                     self.debug_message(
-                        f"\t\t Unhandled error. Could not create a new object for {model._meta.verbose_name}. Error: {e}"
+                        f"\t\t Unhandled error. Could not create a new object for {model._meta.verbose_name}. Error: {e}. Type: {type(e)}"
                     )
+                if import_successful:
+                    # Instance was updated, trigger an update hook.
+                    for fn in hooks.get_hooks('airtable_import_record_updated'):
+                        fn(instance=new_model, is_wagtail_page=is_wagtail_model, record_id=record_id)
 
         return self.created, self.skipped, self.updated
 

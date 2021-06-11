@@ -77,12 +77,24 @@ AIRTABLE_IMPORT_SETTINGS = {
         'AIRTABLE_BASE_URL': 'https://airtable.com/tblxXxXxXxXxXxXx/viwxXxXxXxXxXxXx',
         # The PARENT_PAGE_ID setting is used for creating new Airtable Pages. Every
         # Wagtail Page requires a "parent" page. This setting can either be:
-        # 1. A callable (ie `my_function` without the parentheses)
+        # 1. A callable (ie `my_function` without the parentheses)'
+        # Example:
+        # 'PARENT_PAGE_ID': custom_function,
         # 2. A path to a function. (ie. 'appname.directory.filename.my_function')
+        # Example:
+        # 'PARENT_PAGE_ID': 'path.to.function',
         # 3. A raw integer.
+        # Example:
+        # 'PARENT_PAGE_ID': 3,
+
         # If you choose option #1 (callable) or option #2 (path to a function)
         # Your function needs to return an integer which will represent the Parent
         # Page ID where all imported pages will be created as child pages.
+        # Callables and path-to-functions (option #1 and option #2 in the above docs)
+        # Take an `instance` kwarg as of v0.2.1. Example below:
+        #   def custom_parent_page_id_function(instance=None):
+        #       if instance and isinstance(instance, Page):
+        #           return Page.objects.get(pk=instance.id).get_parent()
         'PARENT_PAGE_ID': 'path.to.function',
         # The `AUTO_PUBLISH_NEW_PAGES` setting will tell this package to either
         # Automatically publish a newly created page, or set to draft.
@@ -138,6 +150,23 @@ AIRTABLE_IMPORT_SETTINGS = {
 Once your settings are ready, you can start creating new Pages in Airtable and import those pages via the Wagtail Admin (found in the setting menu).
 
 **Caveats**: In the above code we see `{'Wagtail Page ID': 'pk',}`, this means there's a column in Airtable named "Wagtail Page ID" and it mapped to a Page pk. When you create a new Wagtail Page inside of an Airtable sheet, _keep this cell blank in your new row_. It will auto-update when it gets imported. This happens because Airtable (and the editors) likely don't know what the new Page ID is going to be, so we let Wagtail set it, and then update the Airtable again.
+
+### Hooks
+Hooks are a way to execute code once an action has happened. This mimics (and internally uses) Wagtail's hook feature.
+
+> **Note**: When using hooks it will add processing time to your requests. If you're using Heroku with a 30s timeout you may want to use a management command to avoid hitting a server timeout.
+
+##### Updated record
+To take an action when a record is updated, you can write a hook like this in your wagtail_hooks.py file:
+
+```python
+@hooks.register('airtable_import_record_updated')
+def airtable_record_updated(instance, is_wagtail_page, record_id):
+    # Instance is the page or model instance
+    # is_wagtail_page is a boolean to determine if the object is a wagtail page. This is a shortcut for `isinstance(instance, wagtail.core.models.Page)`
+    # record_id is the wagtail record ID. You can use this to perform additional actions against Airtable using the airtable-python-wrapper package.
+    pass
+```
 
 ### Management Commands
 
