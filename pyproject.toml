@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "wagtail-airtable"
-version = "0.2"
+version = "0.2.1"
 description = "Sync data between Wagtail and Airtable"
 readme = "README.rst"
 authors = ["Kalob Taulien <kalob.taulien@torchbox.com>"]
