@@ -30,14 +30,6 @@ class AirtableImportResult(NamedTuple):
             output += ", ".join([str(e).rstrip(".") for e in exceptions]) + ". "
         return output.strip()
 
-    def display(self):
-        """
-        Some way to display the result.
-
-        Note this accounts both for blank and absent titles
-        """
-        return self.fields.get("Title of activity") or self.record_id
-
 
 def get_column_to_field_names(airtable_unique_identifier) -> tuple:
     uniq_id_type = type(airtable_unique_identifier)
