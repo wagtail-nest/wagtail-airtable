@@ -6,7 +6,8 @@ from unittest.mock import patch
 from tests.models import Advert, ModelNotUsed, SimilarToAdvert, SimplePage
 from tests.serializers import AdvertSerializer
 from wagtail_airtable.importer import AirtableModelImporter, get_column_to_field_names, convert_mapped_fields, get_data_for_new_model
-from wagtail_airtable.tests import get_mock_airtable
+
+from .mock_airtable import get_mock_airtable
 
 
 class TestImportClass(TestCase):
