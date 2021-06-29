@@ -8,6 +8,7 @@ from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from wagtail_airtable.mixins import AirtableMixin
 
 from wagtail.admin import messages
+from importlib import import_module
 
 WAGTAIL_AIRTABLE_ENABLED = getattr(settings, "WAGTAIL_AIRTABLE_ENABLED", False)
 
@@ -116,22 +117,6 @@ def can_send_airtable_messages(instance) -> bool:
         return True
     return False
 
-def import_models(models=None, verbosity=1):
-    """
-    Import models set in Wagtail Airtable settings
-
-    Supports a list of models if only a limited set of models need to be imported.
-    """
-
-    # Avoid circular import error as get_validated_models is used in import_airtable
-    # management command.
-    from wagtail_airtable.management.commands.import_airtable import Importer
-
-    models = get_validated_models(models=get_models_as_paths(models), as_path=True) if models else get_all_models(as_path=True)
-    importer = Importer(models=models, options={"verbosity": verbosity})
-    return importer.run()
-
-
 def airtable_message(request, instance, message="Airtable record updated", button_text="View record in Airtable", buttons_enabled=True) -> None:
     """
     Common message handler for Wagtail hooks.
@@ -149,3 +134,7 @@ def airtable_message(request, instance, message="Airtable record updated", butto
         messages.success(request, message=message, buttons=buttons)
 
 
+def import_string(module_name):
+    location, attribute = module_name.rsplit(".", 1)
+    module = import_module(location)
+    return getattr(module, attribute)
