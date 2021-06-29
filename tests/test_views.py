@@ -3,7 +3,7 @@ from django.test import TestCase
 
 from tests.models import Advert
 from unittest.mock import patch
-from wagtail_airtable.tests import get_mock_airtable
+from .mock_airtable import get_mock_airtable
 
 
 class TestAdminViews(TestCase):
