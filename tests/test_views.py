@@ -2,12 +2,18 @@ from django.contrib.messages import get_messages
 from django.test import TestCase
 
 from tests.models import Advert
+from unittest.mock import patch
+from wagtail_airtable.tests import get_mock_airtable
 
 
 class TestAdminViews(TestCase):
     fixtures = ['test.json']
 
     def setUp(self):
+        airtable_patcher = patch("wagtail_airtable.mixins.Airtable", new_callable=get_mock_airtable())
+        airtable_patcher.start()
+        self.addCleanup(airtable_patcher.stop)
+
         self.client.login(username='admin', password='password')
 
     def test_get(self):

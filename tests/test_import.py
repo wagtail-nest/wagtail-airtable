@@ -147,13 +147,3 @@ class TestImportClass(TestCase):
         self.assertEqual(data_for_new_model['airtable_record_id'], 'recSomeRecordId')
         self.assertIsNone(data_for_new_model.get('id'))
         self.assertIsNone(data_for_new_model.get('pk'))
-
-
-class TestImportCommand(TransactionTestCase):
-    def setUp(self):
-        airtable_patcher = patch("wagtail_airtable.importer.Airtable", new_callable=get_mock_airtable())
-        self.mock_airtable = airtable_patcher.start()
-        self.addCleanup(airtable_patcher.stop)
-
-    def test_import_command(self):
-        call_command("import_airtable", "tests.Advert", verbosity=1)

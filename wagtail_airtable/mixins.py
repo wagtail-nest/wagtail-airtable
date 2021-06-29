@@ -1,4 +1,3 @@
-import sys
 from ast import literal_eval
 from logging import getLogger
 
@@ -9,12 +8,7 @@ from requests import HTTPError
 
 from django.utils.functional import cached_property
 
-from .tests import get_mock_airtable
-
 logger = getLogger(__name__)
-
-
-TESTING = any(x in ["test", "runtests.py"] for x in sys.argv)
 
 
 class AirtableMixin(models.Model):
@@ -80,18 +74,11 @@ class AirtableMixin(models.Model):
                 and self.AIRTABLE_TABLE_NAME
                 and self.AIRTABLE_UNIQUE_IDENTIFIER
             ):
-                if not TESTING:
-                    self.airtable_client = Airtable(
-                        self.AIRTABLE_BASE_KEY,
-                        self.AIRTABLE_TABLE_NAME,
-                        api_key=settings.AIRTABLE_API_KEY,
-                    )
-                else:
-                    self.airtable_client = get_mock_airtable()(
-                        self.AIRTABLE_BASE_KEY,
-                        self.AIRTABLE_TABLE_NAME,
-                        api_key=settings.AIRTABLE_API_KEY,
-                    )
+                self.airtable_client = Airtable(
+                    self.AIRTABLE_BASE_KEY,
+                    self.AIRTABLE_TABLE_NAME,
+                    api_key=settings.AIRTABLE_API_KEY,
+                )
 
                 self._push_to_airtable = True
                 self._is_enabled = True
