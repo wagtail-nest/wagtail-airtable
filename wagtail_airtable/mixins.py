@@ -9,7 +9,7 @@ from requests import HTTPError
 
 from django.utils.functional import cached_property
 
-from .tests import MockAirtable
+from .tests import get_mock_airtable
 
 logger = getLogger(__name__)
 
@@ -87,7 +87,7 @@ class AirtableMixin(models.Model):
                         api_key=settings.AIRTABLE_API_KEY,
                     )
                 else:
-                    self.airtable_client = MockAirtable(
+                    self.airtable_client = get_mock_airtable()(
                         self.AIRTABLE_BASE_KEY,
                         self.AIRTABLE_TABLE_NAME,
                         api_key=settings.AIRTABLE_API_KEY,

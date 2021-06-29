@@ -9,9 +9,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from logging import getLogger
 
 from wagtail_airtable.forms import AirtableImportModelForm
-from wagtail_airtable.utils import get_model_for_path
+from wagtail_airtable.utils import get_model_for_path, get_validated_models
 
-from wagtail_airtable.management.commands.import_airtable import Importer
+from wagtail_airtable.importer import AirtableModelImporter
 
 logger = getLogger(__name__)
 
@@ -28,7 +28,8 @@ class AirtableImportListing(TemplateView):
         form = AirtableImportModelForm(request.POST)
         if form.is_valid():
             model_label = form.cleaned_data["model"]
-            importer = Importer(models=[model_label], options={"verbosity": 1})
+            model = get_validated_models([model_label])[0]
+            importer = AirtableModelImporter(model=model, verbosity=1)
             importer.run()
             message = f"{importer.created} items created. {importer.updated} items updated. {importer.skipped} items skipped."
             messages.add_message(
