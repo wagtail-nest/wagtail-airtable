@@ -106,6 +106,30 @@ class TestImportClass(TestCase):
         self.assertEqual(advert.title, "Red! It's the new blue!")
         self.assertEqual(updated_result.record_id, "recNewRecordId")
 
+    @patch('wagtail_airtable.mixins.Airtable')
+    def test_create_object(self, mixin_airtable):
+        importer = AirtableModelImporter(model=Advert)
+        self.assertFalse(Advert.objects.filter(slug="test-created").exists())
+        self.assertFalse(Advert.objects.filter(airtable_record_id="test-created-id").exists())
+        self.mock_airtable.get_all.return_value = [{
+            "id": "test-created-id",
+            "fields": {
+                "title": "The created one",
+                "description": "This one, we created.",
+                "external_link": "https://example.com/",
+                "is_active": True,
+                "rating": "1.5",
+                "long_description": "<p>Long description is long.</p>",
+                "points": 95,
+                "slug": "test-created",
+            },
+        }]
+        created_result = next(importer.run())
+        self.assertTrue(created_result.new)
+        advert = Advert.objects.get(airtable_record_id=created_result.record_id)
+        self.assertEqual(advert.title, "The created one")
+        self.assertEqual(advert.slug, "test-created")
+
     def test_update_object_with_invalid_serialized_data(self):
         advert = Advert.objects.get(airtable_record_id="recNewRecordId")
         importer = AirtableModelImporter(model=Advert)
@@ -135,7 +159,6 @@ class TestImportClass(TestCase):
         self.assertFalse(AirtableModelImporter(Advert).model_is_page)
 
     def test_get_data_for_new_model(self):
-        importer = AirtableModelImporter(Advert)
         mapped_fields = convert_mapped_fields(
             self.get_valid_record_fields(),
             self.get_valid_mapped_fields(),
