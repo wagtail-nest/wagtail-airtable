@@ -1,4 +1,6 @@
 import sys
+import django.db
+
 from importlib import import_module
 
 from airtable import Airtable
@@ -529,6 +531,29 @@ class Importer:
                 data_for_new_model = self.get_data_for_new_model(
                     serialized_data, mapped_import_fields, record_id
                 )
+                # extract m2m fields to avoid getting the error
+                # direct assignment to the forward side of a many-to-many set is prohibited
+                m2m_fields = {}
+                for field_name, value in data_for_new_model.items():
+                    field_type = type(
+                        model._meta.get_field(field_name)
+                    )  # ie. django.db.models.fields.CharField
+                    # If this field type is a subclass of a known Wagtail Tag, or a Django m2m field
+                    # We need to loop through all the values and add them to the m2m-style field.
+                    if issubclass(
+                            field_type,
+                            (
+                                    TaggableManager,
+                                    ClusterTaggableManager,
+                                    django.db.models.ManyToManyField,
+                            ),
+                    ):
+                        m2m_fields[field_name] = value
+                    else:
+                        pass
+                # Remove m2m fields from the model data
+                for field_name in m2m_fields:
+                    data_for_new_model.pop(field_name)
 
                 # If there is no match whatsoever, try to create a new `model` instance.
                 # Note: this may fail if there isn't enough data in the Airtable record.
@@ -562,6 +587,19 @@ class Importer:
                         self.debug_message("\t\t Page created")
                     else:
                         new_model.save()
+                        # create m2m relationship objects
+                        if m2m_fields:
+                            try:
+                                for field_name, value in m2m_fields.items():
+                                    m2m_field = getattr(new_model, field_name)
+                                    for m2m_value in value:
+                                        m2m_field.add(m2m_value)
+                            except Exception as e:
+                                logger.info(
+                                    f"Could not create new model m2m relationship. Error: {e}"
+                                )
+                                self.debug_message(f"\tCannot create m2m relationship with the model. Error: {e}")
+                                continue
                         self.debug_message("\t\t Object created")
                     import_successful = True
                     self.created = self.created + 1
