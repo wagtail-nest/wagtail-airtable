@@ -171,7 +171,7 @@ def airtable_record_updated(instance, is_wagtail_page, record_id):
 ### Management Commands
 
 ```bash
-python manage.py import_airtable appname.ModelName secondapp.SecondModel
+python manage.py import_airtable appname.ModelName
 ```
 
 Optionally you can turn up the verbosity for better debugging with the `--verbosity=2` flag.

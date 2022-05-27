@@ -3,12 +3,18 @@ from django.test import TestCase
 from django.urls import reverse
 
 from tests.models import Advert
+from unittest.mock import patch
+from .mock_airtable import get_mock_airtable
 
 
 class TestAdminViews(TestCase):
     fixtures = ['test.json']
 
     def setUp(self):
+        airtable_patcher = patch("wagtail_airtable.mixins.Airtable", new_callable=get_mock_airtable())
+        airtable_patcher.start()
+        self.addCleanup(airtable_patcher.stop)
+
         self.client.login(username='admin', password='password')
 
     def test_get(self):
