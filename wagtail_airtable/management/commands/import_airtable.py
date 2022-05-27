@@ -118,6 +118,42 @@ class Importer:
         }
         return mapped_fields_dict
 
+    def update_model_m2m_fields(self, instance, field_name, value) -> None:
+        m2m_field = getattr(instance, field_name)
+        for m2m_value in value:
+            m2m_field.add(m2m_value)
+
+    def handle_model_data_fields(self, model, data: dict, instance: None):
+        m2m_fields = {}
+        temp_data = {}
+        if not instance:
+            temp_data = data.copy()  # to be able to pop data inside the loop
+        for field_name, value in data.items():
+            field_type = type(
+                model._meta.get_field(field_name)
+            )  # ie. django.db.models.fields.CharField
+            # If this field type is a subclass of a known Wagtail Tag, or a Django m2m field
+            # We need to loop through all the values and add them to the m2m-style field.
+            if issubclass(
+                    field_type,
+                    (
+                            TaggableManager,
+                            ClusterTaggableManager,
+                            models.ManyToManyField,
+                    ),
+            ):
+                if instance:
+                    self.update_model_m2m_fields(instance, field_name, value)
+                else:
+                    m2m_fields[field_name] = value
+                    temp_data.pop(field_name)
+            else:
+                if instance:
+                    setattr(instance, field_name, value)
+
+        if not instance:
+            return m2m_fields, temp_data
+
     def update_object(
         self, instance, record_id, serialized_data, is_wagtail_model=False
     ) -> bool:
@@ -131,23 +167,7 @@ class Importer:
             "\t\t Serializer data was valid. Setting attrs on model..."
         )
         model = type(instance)
-
-        for field_name, value in serialized_data.validated_data.items():
-            field_type = type(
-                model._meta.get_field(field_name)
-            )  # ie. django.db.models.fields.CharField
-            # If this field type is a subclass of a known Wagtail Tag, or a Django m2m field
-            # We need to loop through all the values and add them to the m2m-style field.
-            if issubclass(
-                field_type,
-                (TaggableManager, ClusterTaggableManager, models.ManyToManyField,),
-            ):
-                m2m_field = getattr(instance, field_name)
-                for m2m_value in value:
-                    m2m_field.add(m2m_value)
-            else:
-                setattr(instance, field_name, value)
-
+        self.handle_model_data_fields(model, serialized_data.validated_data, instance)
         try:
             if instance.revisions.count():
                 before = instance.revisions.last().content_json
@@ -234,25 +254,8 @@ class Importer:
 
             if instance:
                 # A local model object was found by a unique identifier.
-                for field_name, value in serialized_data.validated_data.items():
-                    field_type = type(
-                        model._meta.get_field(field_name)
-                    )  # ie. django.db.models.fields.CharField
-                    # If this field type is a subclass of a known Wagtail Tag, or a Django m2m field
-                    # We need to loop through all the values and add them to the m2m-style field.
-                    if issubclass(
-                        field_type,
-                        (
-                            TaggableManager,
-                            ClusterTaggableManager,
-                            models.ManyToManyField,
-                        ),
-                    ):
-                        m2m_field = getattr(instance, field_name)
-                        for m2m_value in value:
-                            m2m_field.add(m2m_value)
-                    else:
-                        setattr(instance, field_name, value)
+                self.handle_model_data_fields(model, serialized_data.validated_data, instance)
+
                 # When an object is saved it should NOT push its newly saved data back to Airtable.
                 # This could theoretically cause a loop. By default this setting is False. But the
                 # below line confirms it's false, just to be safe.
@@ -533,27 +536,7 @@ class Importer:
                 )
                 # extract m2m fields to avoid getting the error
                 # direct assignment to the forward side of a many-to-many set is prohibited
-                m2m_fields = {}
-                for field_name, value in data_for_new_model.items():
-                    field_type = type(
-                        model._meta.get_field(field_name)
-                    )  # ie. django.db.models.fields.CharField
-                    # If this field type is a subclass of a known Wagtail Tag, or a Django m2m field
-                    # We need to loop through all the values and add them to the m2m-style field.
-                    if issubclass(
-                            field_type,
-                            (
-                                    TaggableManager,
-                                    ClusterTaggableManager,
-                                    django.db.models.ManyToManyField,
-                            ),
-                    ):
-                        m2m_fields[field_name] = value
-                    else:
-                        pass
-                # Remove m2m fields from the model data
-                for field_name in m2m_fields:
-                    data_for_new_model.pop(field_name)
+                m2m_fields, data_for_new_model = self.handle_model_data_fields(model, data_for_new_model, None)
 
                 # If there is no match whatsoever, try to create a new `model` instance.
                 # Note: this may fail if there isn't enough data in the Airtable record.
@@ -591,9 +574,7 @@ class Importer:
                         if m2m_fields:
                             try:
                                 for field_name, value in m2m_fields.items():
-                                    m2m_field = getattr(new_model, field_name)
-                                    for m2m_value in value:
-                                        m2m_field.add(m2m_value)
+                                    self.update_model_m2m_fields(new_model, field_name, value)
                             except Exception as e:
                                 logger.info(
                                     f"Could not create new model m2m relationship. Error: {e}"
