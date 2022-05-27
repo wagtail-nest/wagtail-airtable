@@ -10,9 +10,13 @@ from wagtail_airtable.mixins import AirtableMixin
 class SimplePage(Page):
     intro = models.TextField()
 
+
+class Publication(models.Model):
+    title = models.CharField(max_length=30)
+
+
 @register_snippet
 class Advert(AirtableMixin, models.Model):
-
     STAR_RATINGS = (
         (1.0, "1"),
         (1.5, "1.5"),
@@ -35,6 +39,7 @@ class Advert(AirtableMixin, models.Model):
     long_description = RichTextField(blank=True, null=True)
     points = models.IntegerField(null=True, blank=True)
     slug = models.SlugField(max_length=100, unique=True, editable=True)
+    publications = models.ManyToManyField(Publication, null=True, blank=True)
 
     @classmethod
     def map_import_fields(cls):
@@ -48,11 +53,11 @@ class Advert(AirtableMixin, models.Model):
             "long_description": "long_description",
             "points": "points",
             "slug": "slug",
+            "publications": "publications",
         }
         return mappings
 
     def get_export_fields(self):
-
         return {
             "title": self.title,
             "description": self.description,
@@ -62,6 +67,7 @@ class Advert(AirtableMixin, models.Model):
             "long_description": self.long_description,
             "points": self.points,
             "slug": self.slug,
+            "publications": self.publications,
         }
 
     class Meta:

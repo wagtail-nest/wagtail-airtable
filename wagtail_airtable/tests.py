@@ -99,6 +99,11 @@ MockAirtable.get_all.return_value = [
             "long_description": "<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veniam laboriosam consequatur saepe. Repellat itaque dolores neque, impedit reprehenderit eum culpa voluptates harum sapiente nesciunt ratione.</p>",
             "points": 95,
             "slug": "red-its-new-blue",
+            "publications": [
+                {"title": "Record 1 publication 1"},
+                {"title": "Record 1 publication 2"},
+                {"title": "Record 1 publication 3"},
+            ]
         },
     },
     {
@@ -138,6 +143,11 @@ MockAirtable.get_all.return_value = [
             "long_description": "",
             "points": 1,
             "slug": "record-4",
+            "publications": [
+                {"title": "Record 4 publication 1"},
+                {"title": "Record 4 publication 2"},
+                {"title": "Record 4 publication 3"},
+            ]
         },
     },
 ]
