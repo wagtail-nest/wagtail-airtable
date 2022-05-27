@@ -147,6 +147,38 @@ class TestImportClass(TestCase):
         cached_records["second_cached_entry"] = all_records
         self.assertEqual(importer.cached_records, cached_records)
 
+    def test_handle_model_data_fields(self):
+        importer = Importer()
+
+        client = MockAirtable()
+        records = client.get_all()
+        client.get_all.assert_called()
+        for i, record in enumerate(records):
+            m2m_fields, new_model_data = importer.handle_model_data_fields(Advert, record["fields"], None)
+            self.assertEqual(records[i]["fields"]["publications"] if m2m_fields else {},
+                             m2m_fields["publications"] if m2m_fields else {})
+            records[i]["fields"].pop("publications", None)
+
+            self.assertEqual(records[i]["fields"], new_model_data)
+
+    def test_update_m2m_fields(self):
+        importer = Importer()
+
+        client = MockAirtable()
+        records = client.get_all()
+        client.get_all.assert_called()
+        advert = Advert.objects.first()
+        self.assertEqual(len(advert.publications.all()), 0)
+
+        advert_serializer = AdvertSerializer(data=records[0]["fields"])
+        self.assertEqual(advert_serializer.is_valid(), True)
+
+        publications_dict = advert_serializer.validated_data["publications"]
+
+        importer.update_model_m2m_fields(advert, "publications", publications_dict)
+
+        self.assertEqual(len(advert.publications.all()), 3)
+
     def test_convert_mapped_fields(self):
         importer = Importer()
         record_fields_dict = self.get_valid_record_fields()
