@@ -1,5 +1,6 @@
 from django.contrib.messages import get_messages
 from django.test import TestCase
+from django.urls import reverse
 
 from tests.models import Advert
 
@@ -11,33 +12,33 @@ class TestAdminViews(TestCase):
         self.client.login(username='admin', password='password')
 
     def test_get(self):
-        response = self.client.get('/admin/airtable-import/')
+        response = self.client.get(reverse('airtable_import_listing'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Models you can import from Airtable')
         self.assertContains(response, 'Advert')
         self.assertNotContains(response, 'Simple Page')
 
     def test_list_snippets(self):
-        response = self.client.get('/admin/snippets/tests/advert/')
+        response = self.client.get(reverse('wagtailsnippets:list', args=['tests', 'advert']))
         self.assertEqual(response.status_code, 200)
 
     def test_snippet_detail(self):
-        response = self.client.get('/admin/snippets/tests/advert/1/')
+        response = self.client.get(reverse('wagtailsnippets:edit', args=['tests', 'advert', 1]))
         self.assertEqual(response.status_code, 200)
         # Ensure the default Advert does not have an Airtable Record ID
         instance = response.context_data['instance']
         self.assertEqual(instance.airtable_record_id, '')
 
     def test_import_snippet_button_on_list_view(self):
-        response = self.client.get('/admin/snippets/tests/advert/')
+        response = self.client.get(reverse('wagtailsnippets:list', args=['tests', 'advert']))
         self.assertContains(response, 'Import Advert')
 
     def test_no_import_snippet_button_on_list_view(self):
-        response = self.client.get('/admin/snippets/tests/modelnotused/')
+        response = self.client.get(reverse('wagtailsnippets:list', args=['tests', 'modelnotused']))
         self.assertNotContains(response, 'Import Advert')
 
     def test_airtable_message_on_instance_create(self):
-        response = self.client.post('/admin/snippets/tests/advert/add/', {
+        response = self.client.post(reverse('wagtailsnippets:add', args=['tests', 'advert']), {
             'title': 'New advert',
             'description': 'Lorem ipsum dolor sit amet, consectetur adipisicing elit.',
             'rating': "1.5",
@@ -50,7 +51,7 @@ class TestAdminViews(TestCase):
 
     def test_airtable_message_on_instance_edit(self):
         advert = Advert.objects.first()
-        response = self.client.post(f'/admin/snippets/tests/advert/{advert.id}/', {
+        response = self.client.post(reverse('wagtailsnippets:edit', args=['tests', 'advert', advert.pk]), {
             'title': 'Edited',
             'description': 'Edited advert',
             'slug': 'crazy-edited-advert-insane-right',
@@ -64,7 +65,7 @@ class TestAdminViews(TestCase):
 
     def test_airtable_message_on_instance_delete(self):
         advert = Advert.objects.get(slug='delete-me')
-        response = self.client.post(f'/admin/snippets/tests/advert/{advert.id}/delete/')
+        response = self.client.post(reverse('wagtailsnippets:delete', args=['tests', 'advert', advert.pk]))
         messages = list(get_messages(response.wsgi_request))
         self.assertEqual(len(messages), 2)
         self.assertIn('Advertisement &#x27;Wow brand new?!&#x27; deleted', messages[0].message)
