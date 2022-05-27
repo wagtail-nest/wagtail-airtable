@@ -1,6 +1,5 @@
 from django.conf import settings
-from django.conf.urls import url
-from django.urls import reverse
+from django.urls import path, reverse
 from wagtail.core import hooks
 from wagtail.admin.menu import MenuItem
 
@@ -12,8 +11,8 @@ from .mixins import AirtableMixin
 @hooks.register("register_admin_urls")
 def register_airtable_url():
     return [
-        url(
-            r"^airtable-import/$",
+        path(
+            "airtable-import/",
             AirtableImportListing.as_view(),
             name="airtable_import_listing",
         ),
