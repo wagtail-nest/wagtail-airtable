@@ -23,7 +23,6 @@ from wagtail_airtable.utils import get_validated_models
 
 logger = getLogger(__name__)
 
-
 DEFAULT_OPTIONS = {
     "verbosity": 1,
 }
@@ -123,11 +122,7 @@ class Importer:
         for m2m_value in value:
             m2m_field.add(m2m_value)
 
-    def handle_model_data_fields(self, model, data: dict, instance: None):
-        m2m_fields = {}
-        temp_data = {}
-        if not instance:
-            temp_data = data.copy()  # to be able to pop data inside the loop
+    def check_field_is_m2m(self, model, data: dict):
         for field_name, value in data.items():
             field_type = type(
                 model._meta.get_field(field_name)
@@ -142,17 +137,9 @@ class Importer:
                             models.ManyToManyField,
                     ),
             ):
-                if instance:
-                    self.update_model_m2m_fields(instance, field_name, value)
-                else:
-                    m2m_fields[field_name] = value
-                    temp_data.pop(field_name)
+                yield field_name, value, True
             else:
-                if instance:
-                    setattr(instance, field_name, value)
-
-        if not instance:
-            return m2m_fields, temp_data
+                yield field_name, value, False
 
     def update_object(
         self, instance, record_id, serialized_data, is_wagtail_model=False
@@ -167,7 +154,11 @@ class Importer:
             "\t\t Serializer data was valid. Setting attrs on model..."
         )
         model = type(instance)
-        self.handle_model_data_fields(model, serialized_data.validated_data, instance)
+        for field_name, value, is_m2m in self.check_field_is_m2m(model, serialized_data.validated_data):
+            if is_m2m:
+                self.update_model_m2m_fields(instance, field_name, value)
+            else:
+                setattr(instance, field_name, value)
         try:
             if instance.revisions.count():
                 before = instance.revisions.last().content_json
@@ -254,8 +245,11 @@ class Importer:
 
             if instance:
                 # A local model object was found by a unique identifier.
-                self.handle_model_data_fields(model, serialized_data.validated_data, instance)
-
+                for field_name, value, is_m2m in self.check_field_is_m2m(model, serialized_data.validated_data):
+                    if is_m2m:
+                        self.update_model_m2m_fields(instance, field_name, value)
+                    else:
+                        setattr(instance, field_name, value)
                 # When an object is saved it should NOT push its newly saved data back to Airtable.
                 # This could theoretically cause a loop. By default this setting is False. But the
                 # below line confirms it's false, just to be safe.
@@ -536,8 +530,13 @@ class Importer:
                 )
                 # extract m2m fields to avoid getting the error
                 # direct assignment to the forward side of a many-to-many set is prohibited
-                m2m_fields, data_for_new_model = self.handle_model_data_fields(model, data_for_new_model, None)
-
+                m2m_fields = {}
+                temp_data = data_for_new_model.copy()
+                for field_name, value, is_m2m in self.check_field_is_m2m(model, data_for_new_model):
+                    if is_m2m:
+                        m2m_fields[field_name] = value
+                        temp_data.pop(field_name)
+                data_for_new_model = temp_data
                 # If there is no match whatsoever, try to create a new `model` instance.
                 # Note: this may fail if there isn't enough data in the Airtable record.
                 try:
