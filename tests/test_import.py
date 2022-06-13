@@ -147,19 +147,18 @@ class TestImportClass(TestCase):
         cached_records["second_cached_entry"] = all_records
         self.assertEqual(importer.cached_records, cached_records)
 
-    def test_handle_model_data_fields(self):
+    def test_check_field_is_m2m(self):
         importer = Importer()
 
         client = MockAirtable()
         records = client.get_all()
         client.get_all.assert_called()
         for i, record in enumerate(records):
-            m2m_fields, new_model_data = importer.handle_model_data_fields(Advert, record["fields"], None)
-            self.assertEqual(records[i]["fields"]["publications"] if m2m_fields else {},
-                             m2m_fields["publications"] if m2m_fields else {})
-            records[i]["fields"].pop("publications", None)
-
-            self.assertEqual(records[i]["fields"], new_model_data)
+            for field_name, value, m2m in importer.check_field_is_m2m(Advert, record["fields"]):
+                if field_name == "publications":
+                    self.assertEqual(m2m, True)
+                else:
+                    self.assertEqual(m2m, False)
 
     def test_update_m2m_fields(self):
         importer = Importer()
