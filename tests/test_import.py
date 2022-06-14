@@ -154,7 +154,7 @@ class TestImportClass(TestCase):
         records = client.get_all()
         client.get_all.assert_called()
         for i, record in enumerate(records):
-            for field_name, value, m2m in importer.check_field_is_m2m(Advert, record["fields"]):
+            for field_name, value, m2m in importer.get_fields_and_m2m_status(Advert, record["fields"]):
                 if field_name == "publications":
                     self.assertEqual(m2m, True)
                 else:

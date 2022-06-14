@@ -1,6 +1,4 @@
 import sys
-import django.db
-
 from importlib import import_module
 
 from airtable import Airtable
@@ -122,24 +120,21 @@ class Importer:
         for m2m_value in value:
             m2m_field.add(m2m_value)
 
-    def check_field_is_m2m(self, model, data: dict):
+    def get_fields_and_m2m_status(self, model, data: dict):
         for field_name, value in data.items():
             field_type = type(
                 model._meta.get_field(field_name)
             )  # ie. django.db.models.fields.CharField
-            # If this field type is a subclass of a known Wagtail Tag, or a Django m2m field
-            # We need to loop through all the values and add them to the m2m-style field.
-            if issubclass(
+            is_m2m = issubclass(
                     field_type,
                     (
                             TaggableManager,
                             ClusterTaggableManager,
                             models.ManyToManyField,
                     ),
-            ):
-                yield field_name, value, True
-            else:
-                yield field_name, value, False
+            )
+            
+            yield field_name, value, is_m2m
 
     def update_object(
         self, instance, record_id, serialized_data, is_wagtail_model=False
@@ -154,7 +149,7 @@ class Importer:
             "\t\t Serializer data was valid. Setting attrs on model..."
         )
         model = type(instance)
-        for field_name, value, is_m2m in self.check_field_is_m2m(model, serialized_data.validated_data):
+        for field_name, value, is_m2m in self.get_fields_and_m2m_status(model, serialized_data.validated_data):
             if is_m2m:
                 self.update_model_m2m_fields(instance, field_name, value)
             else:
@@ -245,7 +240,7 @@ class Importer:
 
             if instance:
                 # A local model object was found by a unique identifier.
-                for field_name, value, is_m2m in self.check_field_is_m2m(model, serialized_data.validated_data):
+                for field_name, value, is_m2m in self.get_fields_and_m2m_status(model, serialized_data.validated_data):
                     if is_m2m:
                         self.update_model_m2m_fields(instance, field_name, value)
                     else:
@@ -532,7 +527,7 @@ class Importer:
                 # direct assignment to the forward side of a many-to-many set is prohibited
                 m2m_fields = {}
                 temp_data = data_for_new_model.copy()
-                for field_name, value, is_m2m in self.check_field_is_m2m(model, data_for_new_model):
+                for field_name, value, is_m2m in self.get_fields_and_m2m_status(model, data_for_new_model):
                     if is_m2m:
                         m2m_fields[field_name] = value
                         temp_data.pop(field_name)
