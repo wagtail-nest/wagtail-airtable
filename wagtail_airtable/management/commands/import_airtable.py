@@ -21,7 +21,6 @@ from wagtail_airtable.utils import get_validated_models
 
 logger = getLogger(__name__)
 
-
 DEFAULT_OPTIONS = {
     "verbosity": 1,
 }
@@ -116,6 +115,27 @@ class Importer:
         }
         return mapped_fields_dict
 
+    def update_model_m2m_fields(self, instance, field_name, value) -> None:
+        m2m_field = getattr(instance, field_name)
+        for m2m_value in value:
+            m2m_field.add(m2m_value)
+
+    def get_fields_and_m2m_status(self, model, data: dict):
+        for field_name, value in data.items():
+            field_type = type(
+                model._meta.get_field(field_name)
+            )  # ie. django.db.models.fields.CharField
+            is_m2m = issubclass(
+                    field_type,
+                    (
+                            TaggableManager,
+                            ClusterTaggableManager,
+                            models.ManyToManyField,
+                    ),
+            )
+            
+            yield field_name, value, is_m2m
+
     def update_object(
         self, instance, record_id, serialized_data, is_wagtail_model=False
     ) -> bool:
@@ -129,23 +149,11 @@ class Importer:
             "\t\t Serializer data was valid. Setting attrs on model..."
         )
         model = type(instance)
-
-        for field_name, value in serialized_data.validated_data.items():
-            field_type = type(
-                model._meta.get_field(field_name)
-            )  # ie. django.db.models.fields.CharField
-            # If this field type is a subclass of a known Wagtail Tag, or a Django m2m field
-            # We need to loop through all the values and add them to the m2m-style field.
-            if issubclass(
-                field_type,
-                (TaggableManager, ClusterTaggableManager, models.ManyToManyField,),
-            ):
-                m2m_field = getattr(instance, field_name)
-                for m2m_value in value:
-                    m2m_field.add(m2m_value)
+        for field_name, value, is_m2m in self.get_fields_and_m2m_status(model, serialized_data.validated_data):
+            if is_m2m:
+                self.update_model_m2m_fields(instance, field_name, value)
             else:
                 setattr(instance, field_name, value)
-
         try:
             if instance.revisions.count():
                 before = instance.revisions.last().content_json
@@ -232,23 +240,9 @@ class Importer:
 
             if instance:
                 # A local model object was found by a unique identifier.
-                for field_name, value in serialized_data.validated_data.items():
-                    field_type = type(
-                        model._meta.get_field(field_name)
-                    )  # ie. django.db.models.fields.CharField
-                    # If this field type is a subclass of a known Wagtail Tag, or a Django m2m field
-                    # We need to loop through all the values and add them to the m2m-style field.
-                    if issubclass(
-                        field_type,
-                        (
-                            TaggableManager,
-                            ClusterTaggableManager,
-                            models.ManyToManyField,
-                        ),
-                    ):
-                        m2m_field = getattr(instance, field_name)
-                        for m2m_value in value:
-                            m2m_field.add(m2m_value)
+                for field_name, value, is_m2m in self.get_fields_and_m2m_status(model, serialized_data.validated_data):
+                    if is_m2m:
+                        self.update_model_m2m_fields(instance, field_name, value)
                     else:
                         setattr(instance, field_name, value)
                 # When an object is saved it should NOT push its newly saved data back to Airtable.
@@ -529,7 +523,15 @@ class Importer:
                 data_for_new_model = self.get_data_for_new_model(
                     serialized_data, mapped_import_fields, record_id
                 )
-
+                # extract m2m fields to avoid getting the error
+                # direct assignment to the forward side of a many-to-many set is prohibited
+                m2m_fields = {}
+                temp_data = data_for_new_model.copy()
+                for field_name, value, is_m2m in self.get_fields_and_m2m_status(model, data_for_new_model):
+                    if is_m2m:
+                        m2m_fields[field_name] = value
+                        temp_data.pop(field_name)
+                data_for_new_model = temp_data
                 # If there is no match whatsoever, try to create a new `model` instance.
                 # Note: this may fail if there isn't enough data in the Airtable record.
                 try:
@@ -562,6 +564,17 @@ class Importer:
                         self.debug_message("\t\t Page created")
                     else:
                         new_model.save()
+                        # create m2m relationship objects
+                        if m2m_fields:
+                            try:
+                                for field_name, value in m2m_fields.items():
+                                    self.update_model_m2m_fields(new_model, field_name, value)
+                            except Exception as e:
+                                logger.info(
+                                    f"Could not create new model m2m relationship. Error: {e}"
+                                )
+                                self.debug_message(f"\tCannot create m2m relationship with the model. Error: {e}")
+                                continue
                         self.debug_message("\t\t Object created")
                     import_successful = True
                     self.created = self.created + 1
