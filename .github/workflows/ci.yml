@@ -12,33 +12,33 @@ jobs:
         django: ['3.2', '4.0']
         wagtail: ['2.16', '3.0', '4.0']
         include:
-          - wagtail: '2.15'
+          - python: '3.7'
             django: '3.2'
-            python: '3.7'
-          - wagtail: '2.15'
+            wagtail: '2.15'
+          - python: '3.8'
             django: '3.2'
-            python: '3.8'
-          - wagtail: '2.15'
+            wagtail: '2.15'
+          - python: '3.9'
             django: '3.2'
-            python: '3.9'
-          - wagtail: '2.15'
+            wagtail: '2.15'
+          - python: '3.10'
             django: '3.2'
-            python: '3.10'
-          - wagtail: '4.0'
+            wagtail: '2.15'
+          - python: '3.8'
             django: '4.1'
-            python: '3.8'
-          - wagtail: '4.0'
+            wagtail: '4.0'
+          - python: '3.9'
             django: '4.1'
-            python: '3.9'
-          - wagtail: '4.0'
+            wagtail: '4.0'
+          - python: '3.10'
             django: '4.1'
-            python: '3.10'
+            wagtail: '4.0'
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ matrix.python }}
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
