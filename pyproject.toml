@@ -15,7 +15,6 @@ classifiers=[
     'Operating System :: OS Independent',
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
@@ -33,7 +32,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.11"
+python = ">=3.7,<3.11"
 wagtail = ">=2.15"
 airtable-python-wrapper = "~0.13.0"
 djangorestframework = ">=3.11.0"
