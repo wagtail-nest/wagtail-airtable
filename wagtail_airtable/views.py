@@ -1,17 +1,15 @@
+from logging import getLogger
+
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.generic import TemplateView
-from django.core.exceptions import ObjectDoesNotExist
-from logging import getLogger
 
 from wagtail_airtable.forms import AirtableImportModelForm
-from wagtail_airtable.utils import get_model_for_path
-
 from wagtail_airtable.management.commands.import_airtable import Importer
+from wagtail_airtable.utils import get_model_for_path
 
 logger = getLogger(__name__)
 

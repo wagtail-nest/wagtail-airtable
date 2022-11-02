@@ -2,7 +2,7 @@
 COMMON_AIRTABLE_SETTINGS = {
     "AIRTABLE_BASE_KEY": "",
     "AIRTABLE_TABLE_NAME": "Your Table Name",
-    "AIRTABLE_UNIQUE_IDENTIFIER": {"Wagtail Page ID": "pk",},
+    "AIRTABLE_UNIQUE_IDENTIFIER": {"Wagtail Page ID": "pk", },
     "AIRTABLE_SERIALIZER": "yourapp.serializers.YourPageSerializer",
 },
 WAGTAIL_AIRTABLE_ENABLED = True

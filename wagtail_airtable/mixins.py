@@ -5,9 +5,8 @@ from logging import getLogger
 from airtable import Airtable
 from django.conf import settings
 from django.db import models
-from requests import HTTPError
-
 from django.utils.functional import cached_property
+from requests import HTTPError
 
 from .tests import MockAirtable
 
@@ -309,7 +308,9 @@ class AirtableMixin(models.Model):
         If there's an existing airtable record id, update the row.
         Otherwise attempt to create a new record.
         """
-        saved_model = super().save(*args, **kwargs) # Save to database first so we get pk, in case it's used for uniqueness
+
+        # Save to database first so we get pk, in case it's used for uniqueness
+        saved_model = super().save(*args, **kwargs)
         self.setup_airtable()
         if self._push_to_airtable and self.push_to_airtable:
             # Every airtable model needs mapped fields.

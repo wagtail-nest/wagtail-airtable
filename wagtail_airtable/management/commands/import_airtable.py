@@ -1,20 +1,22 @@
 import sys
 from importlib import import_module
+from logging import getLogger
 
 from airtable import Airtable
-from django.db import models, IntegrityError
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand
-
-from logging import getLogger
-
+from django.db import IntegrityError, models
 from modelcluster.contrib.taggit import ClusterTaggableManager
-
 from taggit.managers import TaggableManager
+from wagtail import VERSION as WAGTAIL_VERSION
 
-from wagtail.core import hooks
-from wagtail.core.models import Page
+if WAGTAIL_VERSION >= (3, 0):
+    from wagtail import hooks
+    from wagtail.models import Page
+else:
+    from wagtail.core import hooks
+    from wagtail.core.models import Page
 
 from wagtail_airtable.tests import MockAirtable
 from wagtail_airtable.utils import get_validated_models
@@ -126,14 +128,14 @@ class Importer:
                 model._meta.get_field(field_name)
             )  # ie. django.db.models.fields.CharField
             is_m2m = issubclass(
-                    field_type,
-                    (
-                            TaggableManager,
-                            ClusterTaggableManager,
-                            models.ManyToManyField,
-                    ),
+                field_type,
+                (
+                    TaggableManager,
+                    ClusterTaggableManager,
+                    models.ManyToManyField,
+                ),
             )
-            
+
             yield field_name, value, is_m2m
 
     def update_object(

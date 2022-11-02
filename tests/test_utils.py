@@ -1,14 +1,15 @@
 from unittest.mock import patch
 
 from django.contrib.messages import get_messages
-from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
+from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
 
-from wagtail_airtable.utils import airtable_message, can_send_airtable_messages, get_model_for_path, get_all_models, get_validated_models, import_models
+from tests.models import Advert, SimilarToAdvert, SimplePage
 from wagtail_airtable.management.commands.import_airtable import Importer
-
-from tests.models import Advert, ModelNotUsed, SimilarToAdvert, SimplePage
-from tests.serializers import AdvertSerializer
+from wagtail_airtable.utils import (airtable_message,
+                                    can_send_airtable_messages, get_all_models,
+                                    get_model_for_path, get_validated_models,
+                                    import_models)
 
 
 class TestUtilFunctions(TestCase):

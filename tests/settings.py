@@ -1,5 +1,7 @@
 import os
 
+from wagtail import VERSION as WAGTAIL_VERSION
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -22,7 +24,7 @@ INSTALLED_APPS = [
     'wagtail.images',
     'wagtail.search',
     'wagtail.admin',
-    'wagtail.core',
+    'wagtail' if WAGTAIL_VERSION >= (3, 0) else 'wagtail.core',
 
     'modelcluster',
     'taggit',
@@ -117,7 +119,7 @@ SECRET_KEY = 'not needed'
 # Wagtail settings
 
 WAGTAIL_SITE_NAME = "wagtail-airtable"
-BASE_URL = 'http://example.com'
+WAGTAILADMIN_BASE_URL = 'http://example.com'
 
 AIRTABLE_API_KEY = 'keyWoWoWoWoW'
 WAGTAIL_AIRTABLE_ENABLED = True
@@ -144,3 +146,5 @@ AIRTABLE_IMPORT_SETTINGS = {
         'AIRTABLE_BASE_URL': 'https://airtable.com/tblxXxXxXxXx/viwXxXxXXxXXx'
     },
 }
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
