@@ -28,17 +28,19 @@ class TestAdminViews(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-    # def test_snippet_detail(self):
-    #     if WAGTAIL_VERSION >= (3, 0):
-    #         url = reverse('wagtailsnippets_tests_advert:edit', args=[1])
-    #     else:
-    #         url = reverse('wagtailsnippets:edit', args=['tests', 'advert', 1])
+    def test_snippet_detail(self):
+        if WAGTAIL_VERSION >= (4, 0):
+            url = reverse('wagtailsnippets_tests_advert:edit', args=[1])
+        else:
+            url = reverse('wagtailsnippets:edit', args=['tests', 'advert', 1])
 
-    #     response = self.client.get(url)
-    #     self.assertEqual(response.status_code, 200)
-    #     # Ensure the default Advert does not have an Airtable Record ID
-    #     instance = response.context_data['instance']
-    #     self.assertEqual(instance.airtable_record_id, '')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # Ensure the default Advert does not have an Airtable Record ID
+        instance = response.context_data['object'] if WAGTAIL_VERSION >= (4, 0) \
+            else response.context_data['instance']
+
+        self.assertEqual(instance.airtable_record_id, '')
 
     def test_import_snippet_button_on_list_view(self):
         if WAGTAIL_VERSION >= (4, 0):
