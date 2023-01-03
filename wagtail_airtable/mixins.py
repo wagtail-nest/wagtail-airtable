@@ -1,4 +1,5 @@
 import sys
+from importlib import import_module
 from ast import literal_eval
 from logging import getLogger
 
@@ -42,6 +43,12 @@ class AirtableMixin(models.Model):
     push_to_airtable = True
 
     airtable_record_id = models.CharField(max_length=35, db_index=True, blank=True)
+
+    def get_custom_save_method(self, save_string):
+        location, save_name = save_string.rsplit(".", 1)
+        module = import_module(location)
+        method = getattr(module, save_name)
+        return method
 
     def setup_airtable(self) -> None:
         """
@@ -311,6 +318,11 @@ class AirtableMixin(models.Model):
         """
         saved_model = super().save(*args, **kwargs) # Save to database first so we get pk, in case it's used for uniqueness
         self.setup_airtable()
+        # Check for custom save logic, and use that instead, and then return that methods return which should be the model
+        if hasattr(settings, "WAGTAIL_AIRTABLE_SAVE"):
+            custom_save_method = self.get_custom_save_method(settings.WAGTAIL_AIRTABLE_SAVE)
+            return custom_save_method(self, saved_model) # pass reference of self, and saved model to custom save method
+
         if self._push_to_airtable and self.push_to_airtable:
             # Every airtable model needs mapped fields.
             # mapped_export_fields is a cached property. Delete the cached prop and get new values upon save.

@@ -218,6 +218,12 @@ To target a specific test you can run `python runtests.py tests.test_file.TheTes
 
 Tests are written against Wagtail 2.10 and later.
 
+### Customizing the save method
+In some cases you may want to customize the save method (Making certain actions async for example), and to do so you must overwrite how the save method works within the airtable mixin. 
+
+This is rather advanced, but you can provide the setting `WAGTAIL_AIRTABLE_SAVE` and point it at your own method. e.g. `WAGTAIL_AIRTABLE_SAVE = 'my_app.my_utils.my_airtable_save_method'` where `my_airtable_save_method` is the method you've written to accept 2 params. e.g. `def my_airtable_save_method(airtable_mixin, model): ...`
+
+
 
 ### Trouble Shooting Tips
 #### Duplicates happening on import
