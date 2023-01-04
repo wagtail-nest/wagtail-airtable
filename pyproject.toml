@@ -30,7 +30,7 @@ packages = [
 [tool.poetry.dependencies]
 python = ">=3.7,<3.10"
 wagtail = ">=2.6"
-airtable-python-wrapper = "~0.13.0"
+airtable-python-wrapper = "~0.15.3"
 djangorestframework = ">=3.11.0"
 
 [tool.poetry.dev-dependencies]
