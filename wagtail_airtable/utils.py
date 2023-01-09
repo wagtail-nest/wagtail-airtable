@@ -138,6 +138,11 @@ def airtable_message(request, instance, message="Airtable record updated", butto
 
     Supports a custom message, custom button text, and the ability to disable buttons entirely (use case: deleting a record)
     """
+    custom_message = settings.get("WAGTAIL_AIRTABLE_PUSH_MESSAGE", '')
+
+    if custom_message and settings.get("WAGTAIL_AIRTABLE_SAVE_SYNC", False):
+        message = custom_message
+
     if hasattr(instance, "_airtable_update_error"):
         messages.error(request, message=instance._airtable_update_error)
     else:

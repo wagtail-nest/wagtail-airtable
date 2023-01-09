@@ -311,18 +311,8 @@ class AirtableMixin(models.Model):
                 "message": error_info["message"],
             }
 
-    def save(self, *args, **kwargs):
-        """
-        If there's an existing airtable record id, update the row.
-        Otherwise attempt to create a new record.
-        """
-        saved_model = super().save(*args, **kwargs) # Save to database first so we get pk, in case it's used for uniqueness
+    def save_to_airtable(self):
         self.setup_airtable()
-        # Check for custom save logic, and use that instead, and then return that methods return which should be the model
-        if hasattr(settings, "WAGTAIL_AIRTABLE_SAVE"):
-            custom_save_method = self.get_custom_save_method(settings.WAGTAIL_AIRTABLE_SAVE)
-            return custom_save_method(self, saved_model) # pass reference of self, and saved model to custom save method
-
         if self._push_to_airtable and self.push_to_airtable:
             # Every airtable model needs mapped fields.
             # mapped_export_fields is a cached property. Delete the cached prop and get new values upon save.
@@ -354,6 +344,17 @@ class AirtableMixin(models.Model):
                     logger.warning(message)
                     # Used in the `after_edit_page` hook. If it exists, an error message will be displayed.
                     self._airtable_update_error = message
+
+    def save(self, *args, **kwargs):
+        """
+        If there's an existing airtable record id, update the row.
+        Otherwise attempt to create a new record.
+        """
+        saved_model = super().save(*args, **kwargs) # Save to database first so we get pk, in case it's used for uniqueness
+
+        if settings.get("WAGTAIL_AIRTABLE_SAVE_SYNC", True):
+            # If WAGTAIL_AIRTABLE_SAVE_SYNC is set to True we do it the synchronous way
+            self.save_to_airtable()
 
         return saved_model
 
