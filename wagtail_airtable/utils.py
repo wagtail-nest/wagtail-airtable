@@ -140,7 +140,7 @@ def airtable_message(request, instance, message="Airtable record updated", butto
     """
     custom_message = settings.get("WAGTAIL_AIRTABLE_PUSH_MESSAGE", '')
 
-    if custom_message and settings.get("WAGTAIL_AIRTABLE_SAVE_SYNC", False):
+    if custom_message:
         message = custom_message
 
     if hasattr(instance, "_airtable_update_error"):

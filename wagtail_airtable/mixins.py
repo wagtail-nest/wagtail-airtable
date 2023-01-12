@@ -312,6 +312,10 @@ class AirtableMixin(models.Model):
             }
 
     def save_to_airtable(self):
+        """
+        If there's an existing airtable record id, update the row.
+        Otherwise attempt to create a new record.
+        """
         self.setup_airtable()
         if self._push_to_airtable and self.push_to_airtable:
             # Every airtable model needs mapped fields.
@@ -346,10 +350,6 @@ class AirtableMixin(models.Model):
                     self._airtable_update_error = message
 
     def save(self, *args, **kwargs):
-        """
-        If there's an existing airtable record id, update the row.
-        Otherwise attempt to create a new record.
-        """
         saved_model = super().save(*args, **kwargs) # Save to database first so we get pk, in case it's used for uniqueness
 
         if settings.get("WAGTAIL_AIRTABLE_SAVE_SYNC", True):
