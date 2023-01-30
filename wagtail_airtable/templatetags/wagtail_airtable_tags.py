@@ -25,11 +25,15 @@ def can_import_model(model_label) -> bool:
 @register.simple_tag
 def wagtail_route(name, label, model, *args) -> str:
     """
-    Return the wagtail URL using the label and model.
+    Handles generation of URL depending on the Wagtail version used
+    Addresses the changes in route names within the wagtailsnippets namespace in Wagtail v4.
+    https://docs.wagtail.org/en/stable/releases/4.0.html#url-route-names-for-image-document-and-snippet-apps-have-changed
+
+    Takes the label and the model as arguments.
 
     Use:
     {% load wagtail_airtable_tags %}
-    {% can_import_model "yourapp.ModelName" as template_var %}
+    {% wagtail_route 'wagtailsnippets:list' model_opts.app_label model_opts.model_name %}
 
     Returns a URL.
     """
