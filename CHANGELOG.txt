@@ -1,0 +1,9 @@
+Changelog
+=========
+
+0.4.0 (01.02.2023)
+~~~~~~~~~~~~~~~~~~
+
+ * Add support for Wagtail 4.0 (Katherine Domingo)
+ * Fix to allow local development without Poetry (Brady Moe)
+ * Remove Python 3.6 support (Brady Moe)

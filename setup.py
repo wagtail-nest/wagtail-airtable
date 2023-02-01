@@ -10,12 +10,12 @@ install_requires = [
 
 setup(
     name='wagtail-airtable',
-    version='0.2.2',
+    version='0.4.0',
     description="Sync data between Wagtail and Airtable",
     author='Kalob Taulien',
     author_email='kalob.taulien@torchbox.com',
     url='https://github.com/wagtail/wagtail-airtable',
-    packages=find_packages(exclude=('tests',)),
+    packages=find_packages(exclude=('tests', 'tests.*')),
     include_package_data=True,
     license='BSD',
     long_description="An extension for Wagtail allowing content to be transferred between Airtable sheets and your Wagtail/Django models",
