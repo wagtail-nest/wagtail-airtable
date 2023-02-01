@@ -1,11 +1,16 @@
 from django.conf import settings
 from django.urls import path, reverse
-from wagtail.core import hooks
+from wagtail import VERSION as WAGTAIL_VERSION
+
+if WAGTAIL_VERSION >= (3, 0):
+    from wagtail import hooks
+else:
+    from wagtail.core import hooks
+
 from wagtail.admin.menu import MenuItem
 
-from wagtail_airtable.views import AirtableImportListing
 from wagtail_airtable.utils import airtable_message, can_send_airtable_messages
-from .mixins import AirtableMixin
+from wagtail_airtable.views import AirtableImportListing
 
 
 @hooks.register("register_admin_urls")
@@ -52,7 +57,7 @@ def after_snippet_delete(request, instances):
     total_deleted = len(instances)
     instance = instances[0]
     if can_send_airtable_messages(instance):
-        message = f"Airtable record deleted"
+        message = "Airtable record deleted"
         if total_deleted > 1:
             message = f"{total_deleted} Airtable records deleted"
         airtable_message(request, instance, message=message, buttons_enabled=False)

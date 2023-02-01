@@ -3,9 +3,9 @@
 from setuptools import setup, find_packages
 
 install_requires = [
-    "wagtail>=2.6",
+    "wagtail>=2.15",
     "airtable-python-wrapper>=0.13.0",
-    "djangorestframework>=3.11.0,<=3.12.2",
+    "djangorestframework>=3.11.0,<3.15.0",
 ]
 
 setup(
@@ -30,9 +30,14 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Framework :: Django',
+        'Framework :: Django :: 3',
+        'Framework :: Django :: 4',
         'Framework :: Wagtail',
         'Framework :: Wagtail :: 2',
+        'Framework :: Wagtail :: 3',
+        'Framework :: Wagtail :: 4',
     ],
     install_requires=install_requires,
 )

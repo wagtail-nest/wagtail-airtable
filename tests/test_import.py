@@ -1,12 +1,10 @@
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.test import TestCase, TransactionTestCase
 
-from wagtail_airtable.management.commands.import_airtable import Importer
-from wagtail_airtable.tests import MockAirtable
 from tests.models import Advert, ModelNotUsed, SimilarToAdvert, SimplePage
 from tests.serializers import AdvertSerializer
+from wagtail_airtable.management.commands.import_airtable import Importer
+from wagtail_airtable.tests import MockAirtable
 
 
 class TestImportClass(TestCase):
@@ -77,7 +75,7 @@ class TestImportClass(TestCase):
     def test_get_incorrect_model_serializer(self):
         importer = Importer(models=["tests.Advert"])
         with self.assertRaises(AttributeError) as context:
-            advert_serializer = importer.get_model_serializer("tests.serializers.MissingSerializer")
+            importer.get_model_serializer("tests.serializers.MissingSerializer")
         self.assertEqual("module 'tests.serializers' has no attribute 'MissingSerializer'", str(context.exception))
 
     def test_get_model_settings(self):
@@ -205,13 +203,6 @@ class TestImportClass(TestCase):
         advert_serializer = importer.get_model_serializer("tests.serializers.AdvertSerializer")
         record_fields_dict = self.get_valid_record_fields()
         record_fields_dict["SEO Description"] = "Red is a scientifically proven..."
-        mapped_fields_dict = {
-            "Page Title": "title",
-            "SEO Description": "description",
-            "External Link": "external_link",
-            "Is Active": "is_active",
-            "slug": "slug",
-        }
         mapped_fields = importer.convert_mapped_fields(
             record_fields_dict,
             self.get_valid_mapped_fields(),
@@ -415,4 +406,4 @@ class TestImportCommand(TransactionTestCase):
 
     def test_import_command(self):
         from django.core.management import call_command
-        message = call_command("import_airtable", "tests.Advert", verbosity=1)
+        call_command("import_airtable", "tests.Advert", verbosity=1)

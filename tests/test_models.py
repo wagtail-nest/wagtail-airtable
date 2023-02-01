@@ -1,7 +1,5 @@
 from copy import copy
-from unittest import mock
 
-from airtable import Airtable
 from django.test import TestCase
 
 from tests.models import Advert
@@ -47,7 +45,7 @@ class TestAirtableModel(TestCase):
         self.assertEqual(type(mapped_import_fields), dict)
 
     def test_create_object_from_url(self):
-        response = self.client.post('/admin/snippets/tests/advert/add/', {
+        self.client.post('/admin/snippets/tests/advert/add/', {
             'title': 'Second advert',
             'description': 'Lorem ipsum dolor sit amet, consectetur adipisicing elit.',
             'rating': "1.5",
@@ -220,4 +218,3 @@ class TestAirtableMixin(TestCase):
         deleted = advert.delete_record()
         self.assertTrue(deleted)
         advert.airtable_client.delete.assert_called()
-
