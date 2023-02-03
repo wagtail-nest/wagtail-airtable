@@ -19,6 +19,7 @@ classifiers=[
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
     'Framework :: Django',
     'Framework :: Django :: 3',
     'Framework :: Django :: 4',
@@ -32,7 +33,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.7,<3.11"
+python = ">=3.7,<4.0"
 wagtail = ">=2.15"
 airtable-python-wrapper = "~0.13.0"
 djangorestframework = ">=3.11.0"
