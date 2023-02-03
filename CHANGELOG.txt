@@ -1,6 +1,11 @@
 Changelog
 =========
 
+Unreleased
+~~~~~~~~~~~~~~~~~~
+
+ * Update testing to include Wagtail versions 4.1 and 4.2 (Katherine Domingo)
+
 0.4.0 (01.02.2023)
 ~~~~~~~~~~~~~~~~~~
 
