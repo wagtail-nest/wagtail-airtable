@@ -1,7 +1,6 @@
 from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
-from wagtail import VERSION as WAGTAIL_VERSION
 
 from tests.models import Advert
 
@@ -20,51 +19,35 @@ class TestAdminViews(TestCase):
         self.assertNotContains(response, 'Simple Page')
 
     def test_list_snippets(self):
-        if WAGTAIL_VERSION >= (4, 0):
-            url = reverse('wagtailsnippets_tests_advert:list')
-        else:
-            url = reverse('wagtailsnippets:list', args=['tests', 'advert'])
+        url = reverse('wagtailsnippets_tests_advert:list')
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
     def test_snippet_detail(self):
-        if WAGTAIL_VERSION >= (4, 0):
-            url = reverse('wagtailsnippets_tests_advert:edit', args=[1])
-        else:
-            url = reverse('wagtailsnippets:edit', args=['tests', 'advert', 1])
+        url = reverse('wagtailsnippets_tests_advert:edit', args=[1])
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         # Ensure the default Advert does not have an Airtable Record ID
-        instance = response.context_data['object'] if WAGTAIL_VERSION >= (4, 0) \
-            else response.context_data['instance']
+        instance = response.context_data['object']
 
         self.assertEqual(instance.airtable_record_id, '')
 
     def test_import_snippet_button_on_list_view(self):
-        if WAGTAIL_VERSION >= (4, 0):
-            url = reverse('wagtailsnippets_tests_advert:list')
-        else:
-            url = reverse('wagtailsnippets:list', args=['tests', 'advert'])
+        url = reverse('wagtailsnippets_tests_advert:list')
 
         response = self.client.get(url)
         self.assertContains(response, 'Import Advert')
 
     def test_no_import_snippet_button_on_list_view(self):
-        if WAGTAIL_VERSION >= (4, 0):
-            url = reverse('wagtailsnippets_tests_modelnotused:list')
-        else:
-            url = reverse('wagtailsnippets:list', args=['tests', 'modelnotused'])
+        url = reverse('wagtailsnippets_tests_modelnotused:list')
 
         response = self.client.get(url)
         self.assertNotContains(response, 'Import Advert')
 
     def test_airtable_message_on_instance_create(self):
-        if WAGTAIL_VERSION >= (4, 0):
-            url = reverse('wagtailsnippets_tests_advert:add')
-        else:
-            url = reverse('wagtailsnippets:add', args=['tests', 'advert'])
+        url = reverse('wagtailsnippets_tests_advert:add')
 
         response = self.client.post(url, {
             'title': 'New advert',
@@ -80,10 +63,7 @@ class TestAdminViews(TestCase):
     def test_airtable_message_on_instance_edit(self):
         advert = Advert.objects.first()
 
-        if WAGTAIL_VERSION >= (4, 0):
-            url = reverse('wagtailsnippets_tests_advert:edit', args=[advert.pk])
-        else:
-            url = reverse('wagtailsnippets:edit', args=['tests', 'advert', advert.pk])
+        url = reverse('wagtailsnippets_tests_advert:edit', args=[advert.pk])
 
         response = self.client.post(url, {
             'title': 'Edited',
@@ -100,10 +80,7 @@ class TestAdminViews(TestCase):
     def test_airtable_message_on_instance_delete(self):
         advert = Advert.objects.get(slug='delete-me')
 
-        if WAGTAIL_VERSION >= (4, 0):
-            url = reverse('wagtailsnippets_tests_advert:delete', args=[advert.pk])
-        else:
-            url = reverse('wagtailsnippets:delete', args=['tests', 'advert', advert.pk])
+        url = reverse('wagtailsnippets_tests_advert:delete', args=[advert.pk])
 
         response = self.client.post(url)
         messages = list(get_messages(response.wsgi_request))
