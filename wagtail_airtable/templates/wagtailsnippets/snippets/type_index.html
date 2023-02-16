@@ -10,7 +10,10 @@
             <div class="left">
                 <div class="col">
                     <h1 class="w-header__title">
-                        {% icon classname="w-header__glyph" name="snippet" %} {{ model_opts.verbose_name_plural|capfirst }}
+			{# We can't use the icon templatetag on both 4.1 and 4.2 as the class_name arg was changed to classname #}
+			<svg class="icon icon-snippet w-header__glyph" aria-hidden="true">
+			    <use href="#icon-snippet"></use>
+			</svg>
                     </h1>
                 </div>
                 {% if is_searchable and search_url %}
