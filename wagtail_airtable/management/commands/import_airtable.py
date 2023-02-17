@@ -9,14 +9,8 @@ from django.core.management.base import BaseCommand
 from django.db import IntegrityError, models
 from modelcluster.contrib.taggit import ClusterTaggableManager
 from taggit.managers import TaggableManager
-from wagtail import VERSION as WAGTAIL_VERSION
-
-if WAGTAIL_VERSION >= (3, 0):
-    from wagtail import hooks
-    from wagtail.models import Page
-else:
-    from wagtail.core import hooks
-    from wagtail.core.models import Page
+from wagtail import hooks
+from wagtail.models import Page
 
 from wagtail_airtable.tests import MockAirtable
 from wagtail_airtable.utils import get_validated_models

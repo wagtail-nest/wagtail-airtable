@@ -1,6 +1,14 @@
 Changelog
 =========
 
+Unreleased
+~~~~~~~~~~~~~~~~~~
+
+ * Update testing to include Python version 3.11 (Katherine Domingo)
+ * Update testing to include Wagtail 4.2 (Katherine Domingo)
+ * Update testing to use tox-gh-actions (Katherine Domingo)
+ * Remove Wagtail < 4.1 support (Katherine Domingo)
+
 0.4.0 (01.02.2023)
 ~~~~~~~~~~~~~~~~~~
 

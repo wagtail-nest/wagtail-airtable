@@ -1,7 +1,6 @@
 from django import template
 from django.conf import settings
 from django.urls import reverse
-from wagtail import VERSION as WAGTAIL_VERSION
 
 register = template.Library()
 
@@ -37,10 +36,8 @@ def wagtail_route(name, label, model, *args) -> str:
 
     Returns a URL.
     """
-    if WAGTAIL_VERSION >= (4, 0):
-        tokens = name.split(":")
-        name = "_".join([tokens[0], label, model]) + f":{tokens[1]}"
-        url = reverse(name, args=args)
-    else:
-        url = reverse(name, args=[label, model, *args])
+    tokens = name.split(":")
+    name = "_".join([tokens[0], label, model]) + f":{tokens[1]}"
+    url = reverse(name, args=args)
+
     return url
