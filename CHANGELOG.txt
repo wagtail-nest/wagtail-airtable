@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.5.1 (21.02.2023)
+~~~~~~~~~~~~~~~~~~
+
+* Fix issue from excluding tests in the built package (Jacob Topp-Mugglestone)
+
 0.5.0 (17.02.2023)
 ~~~~~~~~~~~~~~~~~~
 

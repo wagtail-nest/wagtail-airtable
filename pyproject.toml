@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "wagtail-airtable"
-version = "0.5.0"
+version = "0.5.1"
 description = "Sync data between Wagtail and Airtable"
 readme = "README.rst"
 authors = ["Kalob Taulien <kalob.taulien@torchbox.com>"]
@@ -28,9 +28,6 @@ classifiers=[
 ]
 packages = [
     { include = "wagtail_airtable" },
-]
-exclude = [
-    "tests", "wagtail_airtable/tests.py"
 ]
 
 [tool.poetry.dependencies]
