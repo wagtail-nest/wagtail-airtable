@@ -310,7 +310,7 @@ class AirtableMixin(models.Model):
                 "message": error_info["message"],
             }
 
-    def save_to_airtable(self):
+    def save_to_airtable(self, *args, **kwargs):
         """
         If there's an existing airtable record id, update the row.
         Otherwise attempt to create a new record.
@@ -358,7 +358,7 @@ class AirtableMixin(models.Model):
         if getattr(settings, "WAGTAIL_AIRTABLE_SAVE_SYNC", True):
 
             # If WAGTAIL_AIRTABLE_SAVE_SYNC is set to True we do it the synchronous way
-            self.save_to_airtable()
+            self.save_to_airtable(*args, **kwargs)
 
         return saved_model
 
