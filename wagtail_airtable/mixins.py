@@ -358,7 +358,7 @@ class AirtableMixin(models.Model):
         if getattr(settings, "WAGTAIL_AIRTABLE_SAVE_SYNC", True):
 
             # If WAGTAIL_AIRTABLE_SAVE_SYNC is set to True we do it the synchronous way
-            self.save_to_airtable(*args, **kwargs)
+            saved_model = self.save_to_airtable(*args, **kwargs)
 
         return saved_model
 
