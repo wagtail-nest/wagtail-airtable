@@ -1,7 +1,5 @@
-from django.db import models
-from django.utils import timezone
+from wagtail.models import Page
 
-from wagtail.core.models import Page
 from wagtail_airtable.mixins import AirtableMixin
 
 

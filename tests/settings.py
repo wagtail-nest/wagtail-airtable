@@ -22,7 +22,7 @@ INSTALLED_APPS = [
     'wagtail.images',
     'wagtail.search',
     'wagtail.admin',
-    'wagtail.core',
+    'wagtail',
 
     'modelcluster',
     'taggit',
@@ -117,7 +117,7 @@ SECRET_KEY = 'not needed'
 # Wagtail settings
 
 WAGTAIL_SITE_NAME = "wagtail-airtable"
-BASE_URL = 'http://example.com'
+WAGTAILADMIN_BASE_URL = 'http://example.com'
 
 AIRTABLE_API_KEY = 'keyWoWoWoWoW'
 WAGTAIL_AIRTABLE_ENABLED = True
@@ -144,3 +144,5 @@ AIRTABLE_IMPORT_SETTINGS = {
         'AIRTABLE_BASE_URL': 'https://airtable.com/tblxXxXxXxXx/viwXxXxXXxXXx'
     },
 }
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'

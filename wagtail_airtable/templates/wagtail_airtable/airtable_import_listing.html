@@ -1,4 +1,5 @@
 {% extends "wagtailadmin/base.html" %}
+{% load wagtailadmin_tags %}
 {% block titletag %}Import Airtable Sheets{% endblock %}
 {% block content %}
   {% include "wagtailadmin/shared/header.html" with title="Airtable Import" %}
@@ -17,7 +18,7 @@
           {% csrf_token %}
           <input type="hidden" name="model" value="{{ model_path }}" />
           <button type="submit" class="button button-longrunning" data-clicked-text="Importing...">
-            <span class="icon icon-spinner"></span>
+	    {% icon name="spinner" %}
             <em>Import {{ model_name }}</em>
           </button>
         </form>

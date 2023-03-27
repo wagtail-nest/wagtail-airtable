@@ -163,7 +163,7 @@ To take an action when a record is updated, you can write a hook like this in yo
 @hooks.register('airtable_import_record_updated')
 def airtable_record_updated(instance, is_wagtail_page, record_id):
     # Instance is the page or model instance
-    # is_wagtail_page is a boolean to determine if the object is a wagtail page. This is a shortcut for `isinstance(instance, wagtail.core.models.Page)`
+    # is_wagtail_page is a boolean to determine if the object is a wagtail page. This is a shortcut for `isinstance(instance, wagtail.models.Page)`
     # record_id is the wagtail record ID. You can use this to perform additional actions against Airtable using the airtable-python-wrapper package.
     pass
 ```

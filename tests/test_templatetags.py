@@ -1,6 +1,7 @@
 from django.test import TestCase
 
-from wagtail_airtable.templatetags.wagtail_airtable_tags import can_import_model
+from wagtail_airtable.templatetags.wagtail_airtable_tags import \
+    can_import_model
 
 
 class TestTemplateTags(TestCase):

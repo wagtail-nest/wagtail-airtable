@@ -4,10 +4,9 @@ Utility functions for wagtail-airtable.
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
+from wagtail.admin import messages
 
 from wagtail_airtable.mixins import AirtableMixin
-
-from wagtail.admin import messages
 
 WAGTAIL_AIRTABLE_ENABLED = getattr(settings, "WAGTAIL_AIRTABLE_ENABLED", False)
 
@@ -23,6 +22,7 @@ def get_model_for_path(model_path):
         ).model_class()
     except ObjectDoesNotExist:
         return False
+
 
 def get_models_as_paths(models) -> list:
     """
@@ -116,6 +116,7 @@ def can_send_airtable_messages(instance) -> bool:
         return True
     return False
 
+
 def import_models(models=None, verbosity=1):
     """
     Import models set in Wagtail Airtable settings
@@ -152,5 +153,3 @@ def airtable_message(request, instance, message="Airtable record updated", butto
                 messages.button(instance.get_record_usage_url(), button_text, True)
             ]
         messages.success(request, message=message, buttons=buttons)
-
-

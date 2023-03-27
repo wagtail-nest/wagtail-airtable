@@ -1,9 +1,8 @@
 from django.db import models
-from wagtail.core.fields import RichTextField
-from wagtail.core.models import Page
+from wagtail.fields import RichTextField
+from wagtail.models import Page
 from wagtail.snippets.models import register_snippet
 
-from taggit.managers import TaggableManager
 from wagtail_airtable.mixins import AirtableMixin
 
 
