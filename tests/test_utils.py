@@ -112,6 +112,6 @@ class TestUtilFunctions(TestCase):
         airtable_save = instance.save_to_airtable()
 
         # These should be the same without an override
-        AssertEqual(normal_save, airtable_save)
+        self.AssertEqual(normal_save, airtable_save)
 
 
