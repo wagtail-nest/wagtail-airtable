@@ -353,14 +353,11 @@ class AirtableMixin(models.Model):
         return saved_model
 
     def save(self, *args, **kwargs):
-        saved_model = super().save(*args, **kwargs) # Save to database first so we get pk, in case it's used for uniqueness
-
         if getattr(settings, "WAGTAIL_AIRTABLE_SAVE_SYNC", True):
-
             # If WAGTAIL_AIRTABLE_SAVE_SYNC is set to True we do it the synchronous way
-            saved_model = self.save_to_airtable(*args, **kwargs)
+            return self.save_to_airtable(*args, **kwargs)
 
-        return saved_model
+        return super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         self.setup_airtable()
