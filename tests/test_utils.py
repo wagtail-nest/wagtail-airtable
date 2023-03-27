@@ -104,3 +104,14 @@ class TestUtilFunctions(TestCase):
         self.assertTrue(mock.called)
         # Ensure that the constructor with specified arguments
         mock.assert_called_with(models=["tests.advert"], options={"verbosity": 2})
+
+    def test_save_airtable(self):
+        instance = SimplePage.objects.first()
+
+        normal_save = instance.save()
+        airtable_save = instance.save_to_airtable()
+
+        # These should be the same without an override
+        AssertEqual(normal_save, airtable_save)
+
+
