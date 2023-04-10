@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from django.contrib.messages import get_messages
 from django.core.exceptions import ImproperlyConfigured
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from tests.models import Advert, SimilarToAdvert, SimplePage
 from wagtail_airtable.management.commands.import_airtable import Importer
@@ -10,6 +10,7 @@ from wagtail_airtable.utils import (airtable_message,
                                     can_send_airtable_messages, get_all_models,
                                     get_model_for_path, get_validated_models,
                                     import_models)
+from wagtail_airtable.mixins import AirtableMixin
 
 
 class TestUtilFunctions(TestCase):
@@ -105,13 +106,20 @@ class TestUtilFunctions(TestCase):
         # Ensure that the constructor with specified arguments
         mock.assert_called_with(models=["tests.advert"], options={"verbosity": 2})
 
-    def test_save_airtable(self):
+    @patch.object(AirtableMixin, 'save_to_airtable')
+    def test_save_airtable_call(self, mock):
         instance = Advert.objects.last()
 
-        normal_save = instance.save()
-        airtable_save = instance.save_to_airtable()
+        instance.save()
 
-        # These should be the same without an override
-        self.assertEqual(normal_save, airtable_save)
+        self.assertTrue(mock.called)
 
+    @patch.object(AirtableMixin, 'save_to_airtable')
+    @override_settings(WAGTAIL_AIRTABLE_SAVE_SYNC=False)
+    def test_save_airtable_not_called(self, mock):
+        instance = Advert.objects.last()
+
+        instance.save()
+
+        self.assertFalse(mock.called)
 

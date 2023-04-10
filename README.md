@@ -225,21 +225,24 @@ To do so, set: WAGTAIL_AIRTABLE_SAVE_SYNC=False in your settings.py file.
 
 This _escapes_ out of the original save method and requires you enable the asynchronous part of this on your own.
 
-An example of how you might set this up using the signal `after_page_publish` with [django_rq](https://github.com/rq/django-rq)
+An example of how you might set this up using the wagtail hook `after_publish_page` with [django_rq](https://github.com/rq/django-rq)
 ```
 #settings.py
 WAGTAIL_AIRTABLE_SAVE_SYNC=False
 WAGTAIL_AIRTABLE_PUSH_MESSAGE="Airtable save happening in background"
 
 #wagtail_hooks.py
+from wagtail import hooks
+from wagtail.models import Page
+
 @job('airtable')
 def async_airtable_save(page_id):
     my_page = Page.objects.get(page_id).specific
     my_page.save_to_airtable()
     
-@receiver(page_published)
-def upload_page_to_snowflake(sender, **kwargs):
-    page = kwargs["instance"]
+    
+@hooks.register("after_publish_page")
+def upload_page_to_airtable(request, page):
     async_airtable_save.delay(page.pk)
 
 ```

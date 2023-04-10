@@ -43,12 +43,6 @@ class AirtableMixin(models.Model):
 
     airtable_record_id = models.CharField(max_length=35, db_index=True, blank=True)
 
-    def get_custom_save_method(self, save_string):
-        location, save_name = save_string.rsplit(".", 1)
-        module = import_module(location)
-        method = getattr(module, save_name)
-        return method
-
     def setup_airtable(self) -> None:
         """
         This method is used in place of __init__() as to not check global settings and
