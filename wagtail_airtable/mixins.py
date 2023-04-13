@@ -1,4 +1,5 @@
 import sys
+from importlib import import_module
 from ast import literal_eval
 from logging import getLogger
 
@@ -303,7 +304,7 @@ class AirtableMixin(models.Model):
                 "message": error_info["message"],
             }
 
-    def save(self, *args, **kwargs):
+    def save_to_airtable(self, *args, **kwargs):
         """
         If there's an existing airtable record id, update the row.
         Otherwise attempt to create a new record.
@@ -343,8 +344,14 @@ class AirtableMixin(models.Model):
                     logger.warning(message)
                     # Used in the `after_edit_page` hook. If it exists, an error message will be displayed.
                     self._airtable_update_error = message
-
         return saved_model
+
+    def save(self, *args, **kwargs):
+        if getattr(settings, "WAGTAIL_AIRTABLE_SAVE_SYNC", True):
+            # If WAGTAIL_AIRTABLE_SAVE_SYNC is set to True we do it the synchronous way
+            return self.save_to_airtable(*args, **kwargs)
+
+        return super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         self.setup_airtable()

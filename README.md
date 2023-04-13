@@ -218,6 +218,39 @@ To target a specific test you can run `python runtests.py tests.test_file.TheTes
 
 Tests are written against Wagtail 2.10 and later.
 
+### Customizing the save method
+In some cases you may want to customize how saving works, like making the save to airtable asynchronous for example.
+
+To do so, set: WAGTAIL_AIRTABLE_SAVE_SYNC=False in your settings.py file. 
+
+This _escapes_ out of the original save method and requires you enable the asynchronous part of this on your own.
+
+An example of how you might set this up using the signal `after_page_publish` with [django_rq](https://github.com/rq/django-rq)
+```
+#settings.py
+WAGTAIL_AIRTABLE_SAVE_SYNC=False
+WAGTAIL_AIRTABLE_PUSH_MESSAGE="Airtable save happening in background"
+
+#wagtail_hooks.py
+from django.dispatch import receiver
+from wagtail.models import Page
+
+@job('airtable')
+def async_airtable_save(page_id):
+    my_page = Page.objects.get(page_id).specific
+    my_page.save_to_airtable()
+    
+    
+@receiver('page_published')
+def upload_page_to_airtable(request, page):
+    async_airtable_save.delay(page.pk)
+
+```
+
+
+The messaging will be off if you do this, so another setting has been made available so you may change the messaging to anything you'd like:
+`WAGTAIL_AIRTABLE_PUSH_MESSAGE` - set this to whatever you'd like the messaging to be e.g. `WAGTAIL_AIRTABLE_PUSH_MESSAGE='Airtable save is happening in the background'`
+
 
 ### Trouble Shooting Tips
 #### Duplicates happening on import
