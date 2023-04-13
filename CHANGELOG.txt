@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.6.0 (13.04.2023)
+~~~~~~~~~~~~~~~~~~
+
+* Add ability to disable airtable sync on save (Brady Moe)
+
 0.5.1 (21.02.2023)
 ~~~~~~~~~~~~~~~~~~
 
