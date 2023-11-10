@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import redirect
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.generic import TemplateView
 
 from wagtail_airtable.forms import AirtableImportModelForm
@@ -35,6 +36,10 @@ class AirtableImportListing(TemplateView):
         else:
             messages.add_message(request, messages.ERROR, "Could not import")
 
+        if (next_url := request.POST.get("next")) and url_has_allowed_host_and_scheme(
+            next_url, allowed_hosts=settings.ALLOWED_HOSTS, require_https=not settings.DEBUG
+        ):
+            return redirect(next_url)
         return redirect(reverse("airtable_import_listing"))
 
     def _get_base_model(self, model):
