@@ -15,27 +15,25 @@ classifiers=[
     'Operating System :: OS Independent',
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
     'Framework :: Django',
-    'Framework :: Django :: 3',
     'Framework :: Django :: 4',
     'Framework :: Wagtail',
-    'Framework :: Wagtail :: 4',
+    'Framework :: Wagtail :: 5',
 ]
 packages = [
     { include = "wagtail_airtable" },
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.7,<4.0"
-wagtail = ">=4.1"
+python = ">=3.8,<3.12"
+wagtail = ">=5.2"
 airtable-python-wrapper = "~0.13.0"
 djangorestframework = ">=3.11.0"
-django = ">=3.2"
+django = ">=4.2"
 
 [tool.poetry.dev-dependencies]
 tox = ">=3.27"
