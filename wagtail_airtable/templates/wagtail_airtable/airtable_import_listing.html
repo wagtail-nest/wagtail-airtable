@@ -1,5 +1,5 @@
 {% extends "wagtailadmin/base.html" %}
-{% load i18n wagtailadmin_tags %}
+{% load wagtailadmin_tags %}
 
 {% block titletag %}Import Airtable Sheets{% endblock %}
 
@@ -20,9 +20,9 @@
 		    {% csrf_token %}
 		    <input type="hidden" name="model" value="{{ model_path }}" />
 
-                    <button type="submit" class="button button-longrunning" data-controller="w-progress" data-action="w-progress#activate" data-w-progress-active-value="{% trans "Importing..." %}">
+                    <button type="submit" class="button button-longrunning" data-controller="w-progress" data-action="w-progress#activate" data-w-progress-active-value="Importing...">
 			{% icon name="spinner" %}
-			<em data-w-progress-target="label">{% blocktrans %}Import {{ model_name }}{% endblocktrans %}</em>
+			<em data-w-progress-target="label">Import {{ model_name }}</em>
                     </button>
 		</form>
 	    {% else %}
