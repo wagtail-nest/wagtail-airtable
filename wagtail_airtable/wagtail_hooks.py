@@ -26,7 +26,7 @@ def register_airtable_setting():
     menu_item = MenuItem(
         "Airtable Import",
         reverse("airtable_import_listing"),
-        classnames="icon icon-cog",
+        icon_name="cog",
         order=1000,
     )
     menu_item.is_shown = is_shown
