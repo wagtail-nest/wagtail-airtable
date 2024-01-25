@@ -1,32 +1,35 @@
 {% extends "wagtailadmin/base.html" %}
 {% load wagtailadmin_tags %}
-{% block titletag %}Import Airtable Sheets{% endblock %}
-{% block content %}
-  {% include "wagtailadmin/shared/header.html" with title="Airtable Import" %}
 
-  <div class="nice-padding">
-    <h2>Models you can import from Airtable</h2>
-    {% for model_name, model_path, is_airtable_enabled, grouped_models in models %}
-      <h3>{{ model_name }}</h3>
-      {% if grouped_models %}
-        <div class="help-block help-info">
-          <p>When you import {{ model_name }} you'll also be importing these ({{ grouped_models|length }}) as well: {% for model_name in grouped_models %}{{ model_name }}{% if not forloop.last %}, {% endif %} {% endfor %}</p>
-        </div>
-      {% endif %}
-      {% if is_airtable_enabled %}
-        <form method="POST" action="{% url 'airtable_import_listing' %}">
-          {% csrf_token %}
-          <input type="hidden" name="model" value="{{ model_path }}" />
-          <button type="submit" class="button button-longrunning" data-clicked-text="Importing...">
-	    {% icon name="spinner" %}
-            <em>Import {{ model_name }}</em>
-          </button>
-        </form>
-      {% else %}
-        <em>{{ model_name }} is not setup with the correct Airtable settings</em>
-      {% endif %}
-    {% empty %}
-      <em>There are no models configured yet</em>
-    {% endfor %}
-  </div>
+{% block titletag %}Import Airtable Sheets{% endblock %}
+
+{% block content %}
+    {% include "wagtailadmin/shared/header.html" with title="Airtable Import" %}
+
+    <div class="nice-padding">
+	<h2>Models you can import from Airtable</h2>
+	{% for model_name, model_path, is_airtable_enabled, grouped_models in models %}
+	    <h3>{{ model_name }}</h3>
+	    {% if grouped_models %}
+		<div class="help-block help-info">
+		    <p>When you import {{ model_name }} you'll also be importing these ({{ grouped_models|length }}) as well: {% for model_name in grouped_models %}{{ model_name }}{% if not forloop.last %}, {% endif %} {% endfor %}</p>
+		</div>
+	    {% endif %}
+	    {% if is_airtable_enabled %}
+		<form method="POST" action="{% url 'airtable_import_listing' %}">
+		    {% csrf_token %}
+		    <input type="hidden" name="model" value="{{ model_path }}" />
+
+                    <button type="submit" class="button button-longrunning" data-controller="w-progress" data-action="w-progress#activate" data-w-progress-active-value="Importing...">
+			{% icon name="spinner" %}
+			<em data-w-progress-target="label">Import {{ model_name }}</em>
+                    </button>
+		</form>
+	    {% else %}
+		<em>{{ model_name }} is not setup with the correct Airtable settings</em>
+	    {% endif %}
+	{% empty %}
+	    <em>There are no models configured yet</em>
+	{% endfor %}
+    </div>
 {% endblock %}

@@ -1,5 +1,5 @@
 from django.contrib.messages import get_messages
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from tests.models import Advert
@@ -87,3 +87,25 @@ class TestAdminViews(TestCase):
         self.assertEqual(len(messages), 2)
         self.assertIn('Advertisement &#x27;Wow brand new?!&#x27; deleted', messages[0].message)
         self.assertIn('Airtable record deleted', messages[1].message)
+
+    def test_snippet_list_redirect(self):
+        airtable_import_url = reverse("airtable_import_listing")
+        params = [
+            # DEBUG, next URL, expected redirect
+            (True, "http://testserver/redirect/", "http://testserver/redirect/"),
+            (True, "http://not-allowed-host/redirect/", airtable_import_url),
+            (False, "https://testserver/redirect/", "https://testserver/redirect/"),
+            (False, "http://testserver/redirect/", airtable_import_url),
+            (False, "https://not-allowed-host/redirect/", airtable_import_url),
+        ]
+        for debug, next_url, expected_location in params:
+            with self.subTest(
+                debug=debug, next_url=next_url, expected_location=expected_location
+            ):
+                with override_settings(DEBUG=debug):
+                    response = self.client.post(
+                        airtable_import_url,
+                        {"model": "Advert", "next": next_url},
+                        secure=next_url.startswith("https"),
+                    )
+                    self.assertEqual(response.url, expected_location)
