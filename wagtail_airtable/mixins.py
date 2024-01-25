@@ -14,7 +14,7 @@ from .tests import MockAirtable
 logger = getLogger(__name__)
 
 
-TESTING = any(x in ["test", "runtests.py"] for x in sys.argv)
+TESTING = getattr(settings, "WAGTAIL_AIRTABLE_TESTING", False)
 
 
 class AirtableMixin(models.Model):

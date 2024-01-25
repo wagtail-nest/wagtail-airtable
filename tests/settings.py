@@ -122,6 +122,10 @@ WAGTAILADMIN_BASE_URL = 'http://example.com'
 AIRTABLE_API_KEY = 'keyWoWoWoWoW'
 WAGTAIL_AIRTABLE_ENABLED = True
 WAGTAIL_AIRTABLE_DEBUG = False
+
+# Use the mock Airtable API for testing
+WAGTAIL_AIRTABLE_TESTING = True
+
 AIRTABLE_IMPORT_SETTINGS = {
     'tests.SimplePage': {
         'AIRTABLE_BASE_KEY': 'xxx',
