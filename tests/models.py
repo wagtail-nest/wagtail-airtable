@@ -2,8 +2,9 @@ from django.db import models
 from wagtail.fields import RichTextField
 from wagtail.models import Page
 from wagtail.snippets.models import register_snippet
+from wagtail.snippets.views.snippets import IndexView, SnippetViewSet
 
-from wagtail_airtable.mixins import AirtableMixin
+from wagtail_airtable.mixins import AirtableMixin, SnippetImportActionMixin
 
 
 class SimplePage(Page):
@@ -14,7 +15,6 @@ class Publication(models.Model):
     title = models.CharField(max_length=30)
 
 
-@register_snippet
 class Advert(AirtableMixin, models.Model):
     STAR_RATINGS = (
         (1.0, "1"),
@@ -75,6 +75,17 @@ class Advert(AirtableMixin, models.Model):
 
     def __str__(self):
         return self.title
+
+
+class AdvertIndexView(SnippetImportActionMixin, IndexView):
+    pass
+
+
+class AdvertViewSet(SnippetViewSet):
+    model = Advert
+    index_view_class = AdvertIndexView
+
+register_snippet(Advert, viewset=AdvertViewSet)
 
 
 @register_snippet
