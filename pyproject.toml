@@ -6,7 +6,7 @@ authors = [{name = "Kalob Taulien", email = "kalob.taulien@torchbox.com"}]
 maintainers = [
     {name = "Matthew Westcott", email = "matthew.westcott@torchbox.com"},
 ]
-readme = "README.rst"
+readme = "README.md"
 license = {file = "LICENSE"}
 keywords = ["wagtail", "airtable"]
 classifiers=[
@@ -60,7 +60,9 @@ exclude = [
     "*.json",
     "*.ini",
     "*.yaml",
+    "examples",
     "tests",
     "CHANGELOG.md",
-    "testmanage.py",
+    "known-issues.md",
+    "runtests.py",
 ]
