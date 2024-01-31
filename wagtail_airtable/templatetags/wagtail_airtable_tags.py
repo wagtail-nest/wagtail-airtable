@@ -2,6 +2,9 @@ from django import template
 from django.conf import settings
 from django.urls import reverse
 
+from wagtail import VERSION as WAGTAIL_VERSION
+
+
 register = template.Library()
 
 
@@ -41,3 +44,11 @@ def wagtail_route(name, label, model, *args) -> str:
     url = reverse(name, args=args)
 
     return url
+
+
+@register.simple_tag
+def wagtail_major_version() -> int:
+    """
+    Returns the major version of Wagtail as an integer.
+    """
+    return WAGTAIL_VERSION[0]

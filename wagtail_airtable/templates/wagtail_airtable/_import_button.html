@@ -1,0 +1,11 @@
+{% load i18n wagtailadmin_tags %}
+
+{% blocktranslate asvar action_label with snippet_type_name=model_opts.verbose_name_plural %}Import {{ snippet_type_name }}{% endblocktranslate %}
+<form action="{{ button.url }}" method="post">
+    {% csrf_token %}
+    <input type="hidden" name="model" value="{{ model_opts.label }}" />
+    <input type="hidden" name="next" value="{{ next }}" />
+    <button type="submit" aria-label="{{ action_label }}" data-controller="w-tooltip" data-w-tooltip-content-value="{{ action_label }}" class="w-header-button" style="background-color: inherit">
+        {% icon name="cog" %}
+    </button>
+</form>

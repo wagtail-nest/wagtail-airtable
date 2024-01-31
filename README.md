@@ -21,7 +21,7 @@ This package will attempt to match a model object against row in Airtable using 
 
 * Install the package with `pip install wagtail-airtable`
 * Add `'wagtail_airtable'` to your project's `INSTALLED_APPS`.
-    * To enable the snippet-specific import button on the Snippet list view make sure `wagtail_airtable` is above `wagtail.snippets` in your `INSTALLED_APPS`
+    * On Wagtail 5.x, to enable the snippet-specific import button on the Snippet list view make sure `wagtail_airtable` is above `wagtail.snippets` in your `INSTALLED_APPS`
 * In your settings you will need to map Django models to Airtable settings. Every model you want to map to an Airtable sheet will need:
     * An `AIRTABLE_BASE_KEY`. You can find the base key in the [Airtable API docs](https://airtable.com/api) when you're signed in to Airtable.com
     * An `AIRTABLE_TABLE_NAME` to determine which table to connect to.
@@ -250,6 +250,29 @@ def upload_page_to_airtable(request, page):
 
 The messaging will be off if you do this, so another setting has been made available so you may change the messaging to anything you'd like:
 `WAGTAIL_AIRTABLE_PUSH_MESSAGE` - set this to whatever you'd like the messaging to be e.g. `WAGTAIL_AIRTABLE_PUSH_MESSAGE='Airtable save is happening in the background'`
+
+
+### Adding an Import action to the snippet list view (Wagtail 6.x)
+
+As of Wagtail 6.0, the Import action is no longer automatically shown on the snippet listing view (although it is still available through Settings -> Airtable import). To add it back, first ensure that your snippet model is [registered with an explicit viewset](https://docs.wagtail.org/en/stable/topics/snippets/registering.html#using-register-snippet-as-a-function). Then, ensure that the index view for that viewset inherits from `SnippetImportActionMixin`:
+
+```python
+from wagtail.snippets.models import register_snippet
+from wagtail.snippets.views.snippets import IndexView, SnippetViewSet
+from wagtail_airtable.mixins import SnippetImportActionMixin
+from .models import Advert
+
+
+class AdvertIndexView(SnippetImportActionMixin, IndexView):
+    pass
+
+
+class AdvertViewSet(SnippetViewSet):
+    model = Advert
+    index_view_class = AdvertIndexView
+
+register_snippet(Advert, viewset=AdvertViewSet)
+```
 
 
 ### Trouble Shooting Tips
