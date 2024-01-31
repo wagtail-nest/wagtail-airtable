@@ -21,7 +21,7 @@
                     <input type="hidden" name="model" value="{{ model_opts.label }}" />
                     <input type="hidden" name="next" value="{{ request.path }}" />
                     <button type="submit" class="button button-longrunning" data-controller="w-progress" data-action="w-progress#activate" data-w-progress-active-value="{% trans "Importing..." %}">
-                {% icon name="spinner" %}
+                        {% icon name="spinner" %}
                         <em data-w-progress-target="label">{% blocktrans with snippet_type_name=model_opts.verbose_name_plural %}Import {{ snippet_type_name }}{% endblocktrans %}</em>
                     </button>
                 </form>
