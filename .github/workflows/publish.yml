@@ -1,0 +1,51 @@
+# See https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/
+# for a detailed guide
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # to fetch code (actions/checkout)
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: "pip"
+          cache-dependency-path: "**/pyproject.toml"
+
+      - name: ⬇️ Install build dependencies
+        run: |
+          python -m pip install -U flit
+
+      - name: 🏗️ Build
+        run: python -m flit build
+
+      - uses: actions/upload-artifact@v3
+        with:
+          path: ./dist
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: none
+      id-token: write # required for trusted publishing
+    environment: 'publish'
+    steps:
+      - uses: actions/download-artifact@v3
+
+      - name: 🚀 Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: artifact/
+          print-hash: true
