@@ -21,7 +21,7 @@ DEFAULT_OPTIONS = {
     "verbosity": 1,
 }
 
-TESTING = any(x in ["test", "runtests.py"] for x in sys.argv)
+TESTING = getattr(settings, "WAGTAIL_AIRTABLE_TESTING", False)
 
 
 class Importer:
