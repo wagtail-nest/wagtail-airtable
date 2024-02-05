@@ -1,18 +1,15 @@
-Changelog
-=========
+# Changelog
 
-0.6.0 (13.04.2023)
-~~~~~~~~~~~~~~~~~~
+
+## 0.6.0 (13.04.2023)
 
 * Add ability to disable airtable sync on save (Brady Moe)
 
-0.5.1 (21.02.2023)
-~~~~~~~~~~~~~~~~~~
+## 0.5.1 (21.02.2023)
 
 * Fix issue from excluding tests in the built package (Jacob Topp-Mugglestone)
 
-0.5.0 (17.02.2023)
-~~~~~~~~~~~~~~~~~~
+## 0.5.0 (17.02.2023)
 
  * Update testing to include Python version 3.11 (Katherine Domingo)
  * Update testing to include Wagtail 4.2 (Katherine Domingo)
@@ -20,8 +17,7 @@ Changelog
  * Remove Wagtail < 4.1 support (Katherine Domingo)
  * Fix templates to work on Wagtail 4.2 (Josh Munn)
 
-0.4.0 (01.02.2023)
-~~~~~~~~~~~~~~~~~~
+## 0.4.0 (01.02.2023)
 
  * Add support for Wagtail 4.0 (Katherine Domingo)
  * Fix to allow local development without Poetry (Brady Moe)

@@ -1,4 +1,4 @@
-## Known Issues and work arounds
+## Known Issues and workarounds
 > All of these would make amazing PR's ;)
 
 #### Decimal Fields

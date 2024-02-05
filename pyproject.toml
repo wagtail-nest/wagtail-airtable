@@ -1,44 +1,68 @@
-[tool.poetry]
+[project]
 name = "wagtail-airtable"
 version = "0.6.0"
 description = "Sync data between Wagtail and Airtable"
-readme = "README.rst"
-authors = ["Kalob Taulien <kalob.taulien@torchbox.com>"]
-homepage = "https://github.com/wagtail/wagtail-airtable"
-repository = "https://github.com/wagtail/wagtail-airtable"
-documentation = "https://github.com/wagtail/wagtail-airtable/blob/master/README.md"
+authors = [{name = "Kalob Taulien", email = "kalob.taulien@torchbox.com"}]
+maintainers = [
+    {name = "Matthew Westcott", email = "matthew.westcott@torchbox.com"},
+]
+readme = "README.md"
+license = {file = "LICENSE"}
 keywords = ["wagtail", "airtable"]
 classifiers=[
-    'Environment :: Web Environment',
-    'Intended Audience :: Developers',
-    'License :: OSI Approved :: BSD License',
-    'Operating System :: OS Independent',
-    'Programming Language :: Python',
-    'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.8',
-    'Programming Language :: Python :: 3.9',
-    'Programming Language :: Python :: 3.10',
-    'Programming Language :: Python :: 3.11',
-    'Programming Language :: Python :: 3.12',
-    'Framework :: Django',
-    'Framework :: Django :: 4',
-    'Framework :: Wagtail',
-    'Framework :: Wagtail :: 5',
-]
-packages = [
-    { include = "wagtail_airtable" },
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: Django",
+    "Framework :: Django :: 4",
+    "Framework :: Django :: 5.0",
+    "Framework :: Wagtail",
+    "Framework :: Wagtail :: 5",
 ]
 
-[tool.poetry.dependencies]
-python = ">=3.8"
-wagtail = ">=5.2"
-airtable-python-wrapper = "~0.13.0"
-djangorestframework = ">=3.11.0"
-django = ">=4.2"
+requires-python = ">=3.8"
+dependencies = [
+    "Wagtail>=5.2",
+    "Django>=4.2",
+    "airtable-python-wrapper>=0.13.0,<0.14",
+    "djangorestframework>=3.11.0"
+]
 
-[tool.poetry.dev-dependencies]
-tox = ">=3.27"
+[project.optional-dependencies]
+testing = [
+    "tox>=3.27"
+]
+
+[project.urls]
+Source = "https://github.com/wagtail-nest/wagtail-airtable"
+Changelog = "https://github.com/wagtail-nest/wagtail-airtable/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/wagtail-nest/wagtail-airtable/blob/main/README.md"
 
 [build-system]
-requires = ["poetry-core>=1.0.8", ]
-build-backend = "poetry.core.masonry.api"
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.module]
+name = "wagtail_airtable"
+
+[tool.flit.sdist]
+exclude = [
+    ".*",
+    "*.db",
+    "*.json",
+    "*.ini",
+    "*.yaml",
+    "examples",
+    "tests",
+    "CHANGELOG.md",
+    "known-issues.md",
+    "runtests.py",
+]
