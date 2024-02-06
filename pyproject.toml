@@ -1,6 +1,6 @@
 [project]
 name = "wagtail-airtable"
-version = "0.6.0"
+version = "0.7.0"
 description = "Sync data between Wagtail and Airtable"
 authors = [{name = "Kalob Taulien", email = "kalob.taulien@torchbox.com"}]
 maintainers = [
@@ -26,6 +26,7 @@ classifiers=[
     "Framework :: Django :: 5.0",
     "Framework :: Wagtail",
     "Framework :: Wagtail :: 5",
+    "Framework :: Wagtail :: 6",
 ]
 
 requires-python = ">=3.8"
