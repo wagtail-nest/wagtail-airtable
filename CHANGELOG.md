@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0 (06.02.2024)
+
+* Add support for Wagtail 5.2 (Josh Munn)
+* Add support for Wagtail 6.0 (Matt Westcott)
+* Update testing to include Python 3.12 (Josh Munn)
+* Improve logic for activating mock API when testing (Matt Westcott)
+* Use flit for packaging (Dan Braghis)
+* Drop support for Wagtail 5.1 and lower (Josh Munn)
+* Drop support for Python 3.7 (Josh Munn)
 
 ## 0.6.0 (13.04.2023)
 
