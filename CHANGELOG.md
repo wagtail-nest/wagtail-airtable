@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0 (xx.xx.xxxx)
+
+* Add support for Wagtail 6.1 - 6.3 (Matt Westcott)
+* Update testing to include Python 3.13, Django 5.1 (Matt Westcott)
+* Drop support for Python 3.8 (Matt Westcott)
+
 ## 0.7.0 (06.02.2024)
 
 * Add support for Wagtail 5.2 (Josh Munn)
