@@ -5,6 +5,7 @@ from logging import getLogger
 from airtable import Airtable
 from django.conf import settings
 from django.db import models
+from django.middleware.csrf import get_token
 from django.urls import reverse
 from django.utils.functional import cached_property
 from requests import HTTPError
@@ -369,11 +370,16 @@ class AirtableMixin(models.Model):
 class ImportButton(Button):
     template_name = "wagtail_airtable/_import_button.html"
 
+    def __init__(self, *args, request=None, model_opts = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.request = request
+        self.model_opts = model_opts
+
     def get_context_data(self, parent_context):
         context = super().get_context_data(parent_context)
-        context["csrf_token"] = parent_context["csrf_token"]
-        context["model_opts"] = parent_context["model_opts"]
-        context["next"] = parent_context["request"].path
+        context["csrf_token"] = get_token(self.request)
+        context["model_opts"] = self.model_opts
+        context["next"] = self.request.path
         return context
 
 
@@ -386,7 +392,9 @@ class SnippetImportActionMixin:
             buttons.append(
                 ImportButton(
                     "Import from Airtable",
-                    url=reverse("airtable_import_listing")
+                    url=reverse("airtable_import_listing"),
+                    request=self.request,
+                    model_opts=self.model and self.model._meta,
                 )
             )
         return buttons
