@@ -41,4 +41,4 @@ class Command(BaseCommand):
             else:
                 updated_results.append(result)
 
-        return f"{len(new_results)} objects crated. {len(updated_results)} objects updated. {len(error_results)} objects skipped due to errors."
+        return f"{len(new_results)} objects created. {len(updated_results)} objects updated. {len(error_results)} objects skipped due to errors."

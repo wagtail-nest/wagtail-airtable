@@ -29,8 +29,20 @@ class AirtableImportListing(TemplateView):
             model_label = form.cleaned_data["model"]
             model = get_validated_models([model_label])[0]
             importer = AirtableModelImporter(model=model, verbosity=1)
-            importer.run()
-            message = f"{importer.created} items created. {importer.updated} items updated. {importer.skipped} items skipped."
+
+            error_results = 0
+            new_results = 0
+            updated_results = 0
+
+            for result in importer.run():
+                if result.errors:
+                    error_results += 1
+                elif result.new:
+                    new_results += 1
+                else:
+                    updated_results += 1
+
+            message = f"{new_results} items created. {updated_results} items updated. {error_results} items skipped."
             messages.add_message(
                 request, messages.SUCCESS, f"Import succeeded with {message}"
             )
