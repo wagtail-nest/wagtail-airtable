@@ -12,7 +12,9 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "model_name",
+            "model_names",
+            metavar="model_name",
+            nargs="+",
             help="Model (as app_label.model_name) or app name to populate table entries for, e.g. creditcards.CreditCard",
         )
 
@@ -25,20 +27,20 @@ class Command(BaseCommand):
             if AIRTABLE_DEBUG:
                 options["verbosity"] = 2
 
-        model = get_validated_models([options["model_name"]])[0]
-        importer = AirtableModelImporter(model=model, verbosity=options["verbosity"])
+        error_results = 0
+        new_results = 0
+        updated_results = 0
 
-        error_results = []
-        new_results = []
-        updated_results = []
+        for model in get_validated_models(options["model_names"]):
+            importer = AirtableModelImporter(model=model, verbosity=options["verbosity"])
 
-        for result in importer.run():
-            if result.errors:
-                logger.error("Failed to import %s %s", result.record_id, result.errors)
-                error_results.append(result)
-            elif result.new:
-                new_results.append(result)
-            else:
-                updated_results.append(result)
+            for result in importer.run():
+                if result.errors:
+                    logger.error("Failed to import %s %s", result.record_id, result.errors)
+                    error_results += 1
+                elif result.new:
+                    new_results += 1
+                else:
+                    updated_results += 1
 
-        return f"{len(new_results)} objects created. {len(updated_results)} objects updated. {len(error_results)} objects skipped due to errors."
+        return f"{new_results} objects created. {updated_results} objects updated. {error_results} objects skipped due to errors."
