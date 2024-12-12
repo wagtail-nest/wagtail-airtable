@@ -129,6 +129,18 @@ class AirtableModelImporter:
         else:
             self.parent_page = None
 
+    def field_is_m2m(self, field_name):
+        field_type = type(self.model._meta.get_field(field_name))
+
+        return issubclass(
+            field_type,
+            (
+                TaggableManager,
+                ClusterTaggableManager,
+                ManyToManyField,
+            )
+        )
+
     def update_object(self, instance, record_id, data):
         if self.model_is_page and instance.locked:
             logger.debug("Instance for %s is locked. Not updating.", record_id)
@@ -138,17 +150,8 @@ class AirtableModelImporter:
             before = instance.to_json()
 
         for field_name, value in data.items():
-            field_type = type(self.model._meta.get_field(field_name))
-
-            if issubclass(
-                field_type,
-                (
-                    TaggableManager,
-                    ClusterTaggableManager,
-                    ManyToManyField
-                )
-            ):
-                # If M2M, override existing values
+            if self.field_is_m2m(field_name):
+                # override existing values
                 getattr(instance, field_name).set(value)
             else:
                 setattr(instance, field_name, value)
@@ -172,7 +175,18 @@ class AirtableModelImporter:
 
     def create_object(self, data, record_id):
         data_for_new_model = get_data_for_new_model(data, record_id)
-        new_model = self.model(**data_for_new_model)
+
+        # extract m2m fields to avoid getting the error
+        # "direct assignment to the forward side of a many-to-many set is prohibited"
+        m2m_data = {}
+        non_m2m_data = {}
+        for field_name, value in data_for_new_model.items():
+            if self.field_is_m2m(field_name):
+                m2m_data[field_name] = value
+            else:
+                non_m2m_data[field_name] = value
+
+        new_model = self.model(**non_m2m_data)
         new_model._skip_signals = True
 
         if self.parent_page:
@@ -189,6 +203,8 @@ class AirtableModelImporter:
                 new_model.save_revision()
         else:
             new_model.save()
+            for field_name, value in m2m_data.items():
+                getattr(new_model, field_name).set(value)
 
     def get_existing_instance(self, record_id, unique_identifier):
         existing_by_record_id = self.model.objects.filter(airtable_record_id=record_id).first()

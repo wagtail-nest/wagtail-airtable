@@ -97,6 +97,7 @@ class TestImportClass(TestCase):
         importer = AirtableModelImporter(model=Advert)
         advert = Advert.objects.get(airtable_record_id="recNewRecordId")
         self.assertNotEqual(advert.title, "Red! It's the new blue!")
+        self.assertEqual(len(advert.publications.all()), 0)
         updated_result = next(result for result in importer.run() if not result.new)
 
         self.assertEqual(updated_result.record_id, advert.airtable_record_id)
@@ -105,6 +106,7 @@ class TestImportClass(TestCase):
         advert.refresh_from_db()
         self.assertEqual(advert.title, "Red! It's the new blue!")
         self.assertEqual(updated_result.record_id, "recNewRecordId")
+        self.assertEqual(len(advert.publications.all()), 3)
 
     @patch('wagtail_airtable.mixins.Airtable')
     def test_create_object(self, mixin_airtable):
@@ -122,13 +124,21 @@ class TestImportClass(TestCase):
                 "long_description": "<p>Long description is long.</p>",
                 "points": 95,
                 "slug": "test-created",
+                "publications": [
+                    {"title": "Created record publication 1"},
+                    {"title": "Created record publication 2"},
+                    {"title": "Created record publication 3"},
+                ],
             },
         }]
         created_result = next(importer.run())
         self.assertTrue(created_result.new)
+        self.assertIsNone(created_result.errors)
+
         advert = Advert.objects.get(airtable_record_id=created_result.record_id)
         self.assertEqual(advert.title, "The created one")
         self.assertEqual(advert.slug, "test-created")
+        self.assertEqual(len(advert.publications.all()), 3)
 
     def test_update_object_with_invalid_serialized_data(self):
         advert = Advert.objects.get(airtable_record_id="recNewRecordId")
