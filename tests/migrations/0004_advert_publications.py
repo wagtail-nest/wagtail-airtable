@@ -20,6 +20,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='advert',
             name='publications',
-            field=models.ManyToManyField(blank=True, null=True, to='tests.Publication'),
+            field=models.ManyToManyField(blank=True, to='tests.Publication'),
         ),
     ]

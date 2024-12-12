@@ -38,7 +38,7 @@ class Advert(AirtableMixin, models.Model):
     long_description = RichTextField(blank=True, null=True)
     points = models.IntegerField(null=True, blank=True)
     slug = models.SlugField(max_length=100, unique=True, editable=True)
-    publications = models.ManyToManyField(Publication, null=True, blank=True)
+    publications = models.ManyToManyField(Publication, blank=True)
 
     @classmethod
     def map_import_fields(cls):
