@@ -7,8 +7,28 @@ from wagtail.snippets.views.snippets import IndexView, SnippetViewSet
 from wagtail_airtable.mixins import AirtableMixin, SnippetImportActionMixin
 
 
-class SimplePage(Page):
+def get_import_parent_page():
+    return Page.objects.get(slug="home").pk
+
+
+class SimplePage(AirtableMixin, Page):
     intro = models.TextField()
+
+    @classmethod
+    def map_import_fields(cls):
+        mappings = {
+            "title": "title",
+            "slug": "slug",
+            "intro": "intro",
+        }
+        return mappings
+
+    def get_export_fields(self):
+        return {
+            "title": self.title,
+            "slug": self.slug,
+            "intro": self.intro,
+        }
 
 
 class Publication(models.Model):
@@ -38,7 +58,7 @@ class Advert(AirtableMixin, models.Model):
     long_description = RichTextField(blank=True, null=True)
     points = models.IntegerField(null=True, blank=True)
     slug = models.SlugField(max_length=100, unique=True, editable=True)
-    publications = models.ManyToManyField(Publication, null=True, blank=True)
+    publications = models.ManyToManyField(Publication, blank=True)
 
     @classmethod
     def map_import_fields(cls):

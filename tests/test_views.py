@@ -3,12 +3,21 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from tests.models import Advert
+from unittest.mock import patch
+from .mock_airtable import get_mock_airtable
 
 
 class TestAdminViews(TestCase):
     fixtures = ['test.json']
 
     def setUp(self):
+        airtable_mixins_patcher = patch("wagtail_airtable.mixins.Airtable", new_callable=get_mock_airtable())
+        airtable_mixins_patcher.start()
+        self.addCleanup(airtable_mixins_patcher.stop)
+        airtable_importer_patcher = patch("wagtail_airtable.importer.Airtable", new_callable=get_mock_airtable())
+        self.mock_airtable = airtable_importer_patcher.start()
+        self.addCleanup(airtable_importer_patcher.stop)
+
         self.client.login(username='admin', password='password')
 
     def test_get(self):
@@ -17,6 +26,18 @@ class TestAdminViews(TestCase):
         self.assertContains(response, 'Models you can import from Airtable')
         self.assertContains(response, 'Advert')
         self.assertNotContains(response, 'Simple Page')
+
+    def test_post(self):
+        advert = Advert.objects.get(airtable_record_id="recNewRecordId")
+        self.assertNotEqual(advert.title, "Red! It's the new blue!")
+
+        response = self.client.post(reverse('airtable_import_listing'), {
+            'model': 'tests.Advert',
+        })
+        self.assertRedirects(response, reverse('airtable_import_listing'))
+
+        advert.refresh_from_db()
+        self.assertEqual(advert.title, "Red! It's the new blue!")
 
     def test_list_snippets(self):
         url = reverse('wagtailsnippets_tests_advert:list')

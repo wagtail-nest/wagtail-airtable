@@ -9,8 +9,8 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.generic import TemplateView
 
 from wagtail_airtable.forms import AirtableImportModelForm
-from wagtail_airtable.management.commands.import_airtable import Importer
-from wagtail_airtable.utils import get_model_for_path
+from wagtail_airtable.importer import AirtableModelImporter
+from wagtail_airtable.utils import get_model_for_path, get_validated_models
 
 logger = getLogger(__name__)
 
@@ -27,9 +27,22 @@ class AirtableImportListing(TemplateView):
         form = AirtableImportModelForm(request.POST)
         if form.is_valid():
             model_label = form.cleaned_data["model"]
-            importer = Importer(models=[model_label], options={"verbosity": 1})
-            importer.run()
-            message = f"{importer.created} items created. {importer.updated} items updated. {importer.skipped} items skipped."
+            model = get_validated_models([model_label])[0]
+            importer = AirtableModelImporter(model=model, verbosity=1)
+
+            error_results = 0
+            new_results = 0
+            updated_results = 0
+
+            for result in importer.run():
+                if result.errors:
+                    error_results += 1
+                elif result.new:
+                    new_results += 1
+                else:
+                    updated_results += 1
+
+            message = f"{new_results} items created. {updated_results} items updated. {error_results} items skipped."
             messages.add_message(
                 request, messages.SUCCESS, f"Import succeeded with {message}"
             )

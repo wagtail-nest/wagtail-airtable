@@ -4,12 +4,10 @@ from django.contrib.messages import get_messages
 from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase, override_settings
 
-from tests.models import Advert, SimilarToAdvert, SimplePage
-from wagtail_airtable.management.commands.import_airtable import Importer
+from tests.models import Advert, Publication, SimilarToAdvert, SimplePage
 from wagtail_airtable.utils import (airtable_message,
                                     can_send_airtable_messages, get_all_models,
-                                    get_model_for_path, get_validated_models,
-                                    import_models)
+                                    get_model_for_path, get_validated_models)
 from wagtail_airtable.mixins import AirtableMixin
 
 
@@ -57,7 +55,7 @@ class TestUtilFunctions(TestCase):
         self.assertTrue(enabled)
 
     def test_cannot_send_airtable_messages(self):
-        instance = SimplePage.objects.first()
+        instance = Publication.objects.create(title="Moby Dick")
         enabled = can_send_airtable_messages(instance)
         self.assertFalse(enabled)
 
@@ -81,31 +79,6 @@ class TestUtilFunctions(TestCase):
         self.assertIn('Second custom message here', message2)
         self.assertIn('2nd custom button text', message2)
 
-    @patch.object(Importer, '__init__')
-    def test_import_models_without_arguments(self, mock):
-        try:
-            import_models()
-        except:
-            # Do nothing here for now, just fail silently
-            pass
-
-        self.assertTrue(mock.called)
-        # Ensure that the constructor with all models.
-        mock.assert_called_with(models=get_all_models(as_path=True), options={"verbosity": 1})
-
-    @patch.object(Importer, '__init__')
-    def test_import_models_with_arguments(self, mock):
-        mock.return_value = None
-        try:
-            import_models(models=[Advert], verbosity=2)
-        except:
-            # Do nothing here for now, just fail silently
-            pass
-
-        self.assertTrue(mock.called)
-        # Ensure that the constructor with specified arguments
-        mock.assert_called_with(models=["tests.advert"], options={"verbosity": 2})
-
     @patch.object(AirtableMixin, 'save_to_airtable')
     def test_save_airtable_call(self, mock):
         instance = Advert.objects.last()
@@ -122,4 +95,3 @@ class TestUtilFunctions(TestCase):
         instance.save()
 
         self.assertFalse(mock.called)
-

@@ -37,3 +37,9 @@ class AdvertSerializer(AirtableSerializer):
     title = serializers.CharField(max_length=255)
     external_link = serializers.URLField(required=False)
     publications = PublicationsObjectsSerializer(required=False)
+
+
+class SimplePageSerializer(AirtableSerializer):
+    title = serializers.CharField(max_length=255, required=True)
+    slug = serializers.CharField(max_length=100, required=True)
+    intro = serializers.CharField()

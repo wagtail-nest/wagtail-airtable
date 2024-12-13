@@ -4,12 +4,18 @@ from django.test import TestCase
 
 from tests.models import Advert
 from wagtail_airtable.mixins import AirtableMixin
+from unittest.mock import patch
+from .mock_airtable import get_mock_airtable
 
 
 class TestAirtableModel(TestCase):
     fixtures = ['test.json']
 
     def setUp(self):
+        airtable_patcher = patch("wagtail_airtable.mixins.Airtable", new_callable=get_mock_airtable())
+        airtable_patcher.start()
+        self.addCleanup(airtable_patcher.stop)
+
         self.client.login(username='admin', password='password')
         self.advert = Advert.objects.first()
 
@@ -104,6 +110,10 @@ class TestAirtableMixin(TestCase):
     fixtures = ['test.json']
 
     def setUp(self):
+        airtable_patcher = patch("wagtail_airtable.mixins.Airtable", new_callable=get_mock_airtable())
+        self.mock_airtable = airtable_patcher.start()
+        self.addCleanup(airtable_patcher.stop)
+
         self.advert = Advert.objects.first()
 
     def test_setup_airtable(self):
