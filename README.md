@@ -87,14 +87,11 @@ AIRTABLE_IMPORT_SETTINGS = {
         # Example:
         # 'PARENT_PAGE_ID': 3,
 
-        # If you choose option #1 (callable) or option #2 (path to a function)
-        # Your function needs to return an integer which will represent the Parent
-        # Page ID where all imported pages will be created as child pages.
-        # Callables and path-to-functions (option #1 and option #2 in the above docs)
-        # Take an `instance` kwarg as of v0.2.1. Example below:
+        # If you choose option #1 (callable) or option #2 (path to a function),
+        # the supplied function takes no arguments and returns the ID of the parent
+        # page where all imported pages will be created as child pages. For example:
         #   def custom_parent_page_id_function(instance=None):
-        #       if instance and isinstance(instance, Page):
-        #           return Page.objects.get(pk=instance.id).get_parent()
+        #       Page.objects.get(slug="imported-pages").pk
         'PARENT_PAGE_ID': 'path.to.function',
         # The `AUTO_PUBLISH_NEW_PAGES` setting will tell this package to either
         # Automatically publish a newly created page, or set to draft.
