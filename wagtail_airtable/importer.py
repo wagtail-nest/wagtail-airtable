@@ -188,6 +188,7 @@ class AirtableModelImporter:
 
         new_model = self.model(**non_m2m_data)
         new_model._skip_signals = True
+        new_model.push_to_airtable = False
 
         if self.parent_page:
             new_model.live = False

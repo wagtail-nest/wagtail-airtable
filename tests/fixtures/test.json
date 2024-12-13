@@ -51,7 +51,7 @@
     "model": "wagtailcore.page",
     "fields": {
         "title": "Home",
-        "numchild": 3,
+        "numchild": 0,
         "show_in_menus": false,
         "live": true,
         "depth": 2,

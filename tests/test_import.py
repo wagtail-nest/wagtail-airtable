@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase, TransactionTestCase
 from unittest.mock import patch
+from wagtail.models import Page
 
 from tests.models import Advert, ModelNotUsed, SimilarToAdvert, SimplePage
 from tests.serializers import AdvertSerializer
@@ -179,3 +180,26 @@ class TestImportClass(TestCase):
         self.assertEqual(data_for_new_model['airtable_record_id'], 'recSomeRecordId')
         self.assertIsNone(data_for_new_model.get('id'))
         self.assertIsNone(data_for_new_model.get('pk'))
+
+    @patch('wagtail_airtable.mixins.Airtable')
+    def test_create_page(self, mixin_airtable):
+        importer = AirtableModelImporter(model=SimplePage)
+        self.assertEqual(Page.objects.get(slug="home").get_children().count(), 0)
+
+        self.mock_airtable.get_all.return_value = [{
+            "id": "test-created-page-id",
+            "fields": {
+                "title": "A simple page",
+                "slug": "a-simple-page",
+                "intro": "How much more simple can it get? And the answer is none. None more simple.",
+            },
+        }]
+        created_result = next(importer.run())
+        self.assertTrue(created_result.new)
+        self.assertIsNone(created_result.errors)
+
+        page = Page.objects.get(slug="home").get_children().first().specific
+        self.assertIsInstance(page, SimplePage)
+        self.assertEqual(page.title, "A simple page")
+        self.assertEqual(page.slug, "a-simple-page")
+        self.assertEqual(page.intro, "How much more simple can it get? And the answer is none. None more simple.")

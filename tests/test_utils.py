@@ -4,7 +4,7 @@ from django.contrib.messages import get_messages
 from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase, override_settings
 
-from tests.models import Advert, SimilarToAdvert, SimplePage
+from tests.models import Advert, Publication, SimilarToAdvert, SimplePage
 from wagtail_airtable.utils import (airtable_message,
                                     can_send_airtable_messages, get_all_models,
                                     get_model_for_path, get_validated_models)
@@ -55,7 +55,7 @@ class TestUtilFunctions(TestCase):
         self.assertTrue(enabled)
 
     def test_cannot_send_airtable_messages(self):
-        instance = SimplePage.objects.first()
+        instance = Publication.objects.create(title="Moby Dick")
         enabled = can_send_airtable_messages(instance)
         self.assertFalse(enabled)
 

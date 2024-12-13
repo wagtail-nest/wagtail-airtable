@@ -40,4 +40,6 @@ class AdvertSerializer(AirtableSerializer):
 
 
 class SimplePageSerializer(AirtableSerializer):
-    pass
+    title = serializers.CharField(max_length=255, required=True)
+    slug = serializers.CharField(max_length=100, required=True)
+    intro = serializers.CharField()
