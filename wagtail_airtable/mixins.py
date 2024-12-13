@@ -132,30 +132,6 @@ class AirtableMixin(models.Model):
     def mapped_export_fields(self):
         return self.get_export_fields()
 
-    def create_record(self) -> dict:
-        """
-        Create or update a record.
-
-        The create_record() method will look for an Airtable match before trying
-        to create a new Airtable record (that comes with a new airtable_record_id).
-
-        This function needs to check for a matched record in Airtable first just in case
-        some data became out of sync, or one person worked in Airtable and one worked in
-        Wagtail. The idea here is to marry those records whenever possible instead of
-        duplicating Airtable records.
-
-        If a record in Airtable exists, update this object with the found record_id. (Prevent record duplication)
-        But if a record is NOT found in Airtable, create a new record.
-        """
-        matched_record = self.match_record()
-        if matched_record:
-            record = self.update_record(matched_record)
-        else:
-            record = self.airtable_client.insert(self.mapped_export_fields)
-
-        self.airtable_record_id = record["id"]
-        return record
-
     def check_record_exists(self, airtable_record_id) -> bool:
         """
         Check if a record exists in an Airtable by its exact Airtable Record ID.
@@ -168,28 +144,6 @@ class AirtableMixin(models.Model):
         except HTTPError:
             record = {}
         return bool(record)
-
-    def update_record(self, airtable_record_id=None):
-        """
-        Update a record.
-
-        Before updating a record this will check to see if a record even exists
-        in Airtable. If a record is not found using its Airtable record_id it cannot
-        be updated and may throw an unexpected error.
-
-        If a record DOES exist based on its Airtable record_id, we can update that particular row.
-        If a record does NOT exist in Airtable, a new record will need to be created.
-        """
-        airtable_record_id = airtable_record_id or self.airtable_record_id
-        if self.check_record_exists(airtable_record_id):
-            # Record exists in Airtable
-            record = self.airtable_client.update(airtable_record_id, self.mapped_export_fields)
-        else:
-            # No record exists in Airtable. Create a new record now.
-            record = self.create_record()
-
-        self.airtable_record_id = record["id"]
-        return record
 
     def delete_record(self) -> bool:
         """
@@ -294,6 +248,34 @@ class AirtableMixin(models.Model):
                 "message": error_info["message"],
             }
 
+    def _update_record(self, record_id, fields):
+        try:
+            self.airtable_client.update(record_id, fields)
+        except HTTPError as e:
+            error = self.parse_request_error(e.args[0])
+            message = (
+                f"Could not update Airtable record. Reason: {error['message']}"
+            )
+            logger.warning(message)
+            # Used in the `after_edit_page` hook. If it exists, an error message will be displayed.
+            self._airtable_update_error = message
+            return False
+        return True
+
+    def _create_record(self, fields):
+        try:
+            record = self.airtable_client.insert(fields)
+        except HTTPError as e:
+            error = self.parse_request_error(e.args[0])
+            message = (
+                f"Could not create Airtable record. Reason: {error['message']}"
+            )
+            logger.warning(message)
+            # Used in the `after_edit_page` hook. If it exists, an error message will be displayed.
+            self._airtable_update_error = message
+            return None
+        return record["id"]
+
     def save_to_airtable(self):
         """
         If there's an existing airtable record id, update the row.
@@ -304,33 +286,21 @@ class AirtableMixin(models.Model):
             # Every airtable model needs mapped fields.
             # mapped_export_fields is a cached property. Delete the cached prop and get new values upon save.
             self.refresh_mapped_export_fields()
-            if self.airtable_record_id:
+            if self.airtable_record_id and self.check_record_exists(self.airtable_record_id):
                 # If this model has an airtable_record_id, attempt to update the record.
-                try:
-                    self.update_record()
-                except HTTPError as e:
-                    error = self.parse_request_error(e.args[0])
-                    message = (
-                        f"Could not update Airtable record. Reason: {error['message']}"
-                    )
-                    logger.warning(message)
-                    # Used in the `after_edit_page` hook. If it exists, an error message will be displayed.
-                    self._airtable_update_error = message
+                self._update_record(self.airtable_record_id, self.mapped_export_fields)
             else:
-                # Creating a record will also search for an existing field match
-                # ie. Looks for a matching `slug` in Airtable and Wagtail/Django
-                try:
-                    self.create_record()
-                    # Save once more so the airtable_record_id is stored.
+                record_id = self.match_record()
+                if record_id:
+                    # A match was found by unique identifier. Update the record.
+                    success = self._update_record(record_id, self.mapped_export_fields)
+                else:
+                    record_id = self._create_record(self.mapped_export_fields)
+                    success = bool(record_id)
+
+                if success:
+                    self.airtable_record_id = record_id
                     super().save(update_fields=["airtable_record_id"])
-                except HTTPError as e:
-                    error = self.parse_request_error(e.args[0])
-                    message = (
-                        f"Could not create Airtable record. Reason: {error['message']}"
-                    )
-                    logger.warning(message)
-                    # Used in the `after_edit_page` hook. If it exists, an error message will be displayed.
-                    self._airtable_update_error = message
 
     def save(self, *args, **kwargs):
         # Save to database first so we get pk, in case it's used for uniqueness

@@ -144,16 +144,6 @@ class TestAirtableMixin(TestCase):
         advert.airtable_client.insert.assert_not_called()
         self.assertEqual(advert.airtable_record_id, 'recNewRecordId')
 
-    def test_update_record(self):
-        advert = Advert.objects.first()
-        advert.setup_airtable()
-        self.assertEqual(advert.airtable_record_id, '')
-        record = advert.update_record('fake record id')
-        advert.airtable_client.update.assert_called()
-        advert.airtable_client.insert.assert_not_called()
-        self.assertEqual(record['id'], 'recNewRecordId')
-        self.assertEqual(advert.airtable_record_id, 'recNewRecordId')
-
     def test_delete_record(self):
         advert = copy(self.advert)
         advert.setup_airtable()
