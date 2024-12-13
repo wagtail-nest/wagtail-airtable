@@ -2,7 +2,7 @@ from copy import copy
 
 from django.test import TestCase
 
-from tests.models import Advert
+from tests.models import Advert, SimplePage
 from wagtail_airtable.mixins import AirtableMixin
 from unittest.mock import ANY, patch
 from .mock_airtable import get_mock_airtable
@@ -178,10 +178,8 @@ class TestAirtableMixin(TestCase):
         self.mock_airtable = airtable_patcher.start()
         self.addCleanup(airtable_patcher.stop)
 
-        self.advert = Advert.objects.first()
-
     def test_setup_airtable(self):
-        advert = copy(self.advert)
+        advert = copy(Advert.objects.first())
         self.assertFalse(advert._ran_airtable_setup)
         self.assertFalse(advert._is_enabled)
         self.assertFalse(advert._push_to_airtable)
@@ -198,11 +196,11 @@ class TestAirtableMixin(TestCase):
         self.assertTrue(hasattr(advert, 'airtable_client'))
 
     def test_delete_record(self):
-        advert = copy(self.advert)
+        advert = Advert.objects.get(airtable_record_id='recNewRecordId')
         advert.setup_airtable()
         deleted = advert.delete_record()
         self.assertTrue(deleted)
-        advert.airtable_client.delete.assert_called()
+        advert.airtable_client.delete.assert_called_once_with("recNewRecordId")
 
     def test_parse_request_error(self):
         error_401 = "401 Client Error: Unauthorized for url: https://api.airtable.com/v0/appYourAppId/Your%20Table?filterByFormula=.... [Error: {'type': 'AUTHENTICATION_REQUIRED', 'message': 'Authentication required'}]"
@@ -224,15 +222,22 @@ class TestAirtableMixin(TestCase):
         self.assertEqual(parsed_error['message'], 'Could not find table table_name in appxxxxx')
 
     def test_match_record(self):
-        advert = copy(self.advert)
+        advert = Advert.objects.get(slug='red-its-new-blue')
         advert.setup_airtable()
         record_id = advert.match_record()
         self.assertEqual(record_id, 'recNewRecordId')
-        advert.airtable_client.search.assert_called()
+        advert.airtable_client.search.assert_called_once_with('slug', 'red-its-new-blue')
+
+    def test_match_record_with_dict_identifier(self):
+        page = SimplePage.objects.get(slug='home')
+        page.setup_airtable()
+        record_id = page.match_record()
+        self.assertEqual(record_id, 'recHomePageId')
+        page.airtable_client.search.assert_called_once_with('Page Slug', 'home')
 
     def test_check_record_exists(self):
-        advert = copy(self.advert)
+        advert = Advert.objects.get(airtable_record_id='recNewRecordId')
         advert.setup_airtable()
         record_exists = advert.check_record_exists('recNewRecordId')
         self.assertTrue(record_exists)
-        advert.airtable_client.get.assert_called()
+        advert.airtable_client.get.assert_called_once_with('recNewRecordId')

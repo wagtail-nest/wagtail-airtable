@@ -117,6 +117,17 @@ def get_mock_airtable():
                     },
                 },
             ]
+        elif field == "Page Slug" and value == "home":
+            return [
+                {
+                    "id": "recHomePageId",
+                    "fields": {
+                        "title": "Home",
+                        "Page Slug": "home",
+                        "intro": "This is the home page.",
+                    },
+                },
+            ]
         else:
             return []
 

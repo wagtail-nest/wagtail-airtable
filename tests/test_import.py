@@ -200,7 +200,7 @@ class TestImportClass(TestCase):
             "id": "test-created-page-id",
             "fields": {
                 "title": "A simple page",
-                "slug": "a-simple-page",
+                "Page Slug": "a-simple-page",
                 "intro": "How much more simple can it get? And the answer is none. None more simple.",
             },
         }]
@@ -230,7 +230,7 @@ class TestImportClass(TestCase):
                 "id": "test-created-page-id",
                 "fields": {
                     "title": "A simple page",
-                    "slug": "a-simple-page",
+                    "Page Slug": "a-simple-page",
                     "intro": "How much more simple can it get? And the answer is none. None more simple.",
                 },
             }]
@@ -265,7 +265,7 @@ class TestImportClass(TestCase):
             "id": "test-created-page-id",
             "fields": {
                 "title": "A simple page",
-                "slug": "a-simple-page",
+                "Page Slug": "a-simple-page",
                 "intro": "How much more simple can it get? Oh, actually it can get more simple.",
             },
         }]
@@ -299,7 +299,7 @@ class TestImportClass(TestCase):
             "id": "test-created-page-id",
             "fields": {
                 "title": "A simple page",
-                "slug": "a-simple-page",
+                "Page Slug": "a-simple-page",
                 "intro": "How much more simple can it get? And the answer is none. None more simple.",
             },
         }]
@@ -330,7 +330,7 @@ class TestImportClass(TestCase):
             "id": "test-created-page-id",
             "fields": {
                 "title": "A simple page",
-                "slug": "a-simple-page",
+                "Page Slug": "a-simple-page",
                 "intro": "How much more simple can it get? Oh, actually it can get more simple.",
             },
         }]
