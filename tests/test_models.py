@@ -4,7 +4,7 @@ from django.test import TestCase
 
 from tests.models import Advert
 from wagtail_airtable.mixins import AirtableMixin
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 from .mock_airtable import get_mock_airtable
 
 
@@ -75,33 +75,97 @@ class TestAirtableModel(TestCase):
         self.assertTrue(advert._push_to_airtable)
         self.assertTrue(hasattr(advert, 'airtable_client'))
 
-    def test_edit_object(self):
+    def test_create_object_with_existing_airtable_record_id(self):
         advert = Advert.objects.create(
-            title='Throw away advert',
+            title='Testing creation',
             description='Lorem ipsum dolor sit amet, consectetur adipisicing elit.',
             rating="2.5",
-            slug='edit-advert',
-            airtable_record_id='recCustomEditId',
+            slug='testing-creation',
+            airtable_record_id='recNewRecordId',
         )
-        # Get the new advert without the instantiated airtable properties and api client
-        advert = Advert.objects.get(slug='edit-advert')
-        self.assertFalse(advert._ran_airtable_setup)
-        self.assertFalse(advert._is_enabled)
-        self.assertFalse(advert._push_to_airtable)
+        # save_to_airtable will confirm that a record with the given ID exists
+        # and update that record
+        advert.airtable_client.get.assert_called_once_with('recNewRecordId')
+        advert.airtable_client.update.assert_called_once_with('recNewRecordId', ANY)
+        call_args = advert.airtable_client.update.call_args.args
+        self.assertEqual(call_args[1]['title'], 'Testing creation')
+        advert.airtable_client.insert.assert_not_called()
+
+    def test_create_object_with_missing_id_and_matching_airtable_record(self):
+        advert = Advert.objects.create(
+            title='Testing creation',
+            description='Lorem ipsum dolor sit amet, consectetur adipisicing elit.',
+            rating="2.5",
+            slug='a-matching-slug',
+            airtable_record_id='recMissingRecordId',
+        )
+        # save_to_airtable will find that a record with the given ID does not exist,
+        # but one matching the slug does, and update that record
+        advert.airtable_client.get.assert_called_once_with('recMissingRecordId')
+        advert.airtable_client.search.assert_called_once_with('slug', 'a-matching-slug')
+        advert.airtable_client.update.assert_called_once_with('recMatchedRecordId', ANY)
+        call_args = advert.airtable_client.update.call_args.args
+        self.assertEqual(call_args[1]['title'], 'Testing creation')
+        advert.airtable_client.insert.assert_not_called()
+        advert.refresh_from_db()
+        self.assertEqual(advert.airtable_record_id, 'recMatchedRecordId')
+
+    def test_create_object_with_no_id_and_matching_airtable_record(self):
+        advert = Advert.objects.create(
+            title='Testing creation',
+            description='Lorem ipsum dolor sit amet, consectetur adipisicing elit.',
+            rating="2.5",
+            slug='a-matching-slug',
+        )
+        # save_to_airtable will skip the lookup by ID, but find a record matching the slug,
+        # and update that record
+        advert.airtable_client.get.assert_not_called()
+        advert.airtable_client.search.assert_called_once_with('slug', 'a-matching-slug')
+        advert.airtable_client.update.assert_called_once_with('recMatchedRecordId', ANY)
+        call_args = advert.airtable_client.update.call_args.args
+        self.assertEqual(call_args[1]['title'], 'Testing creation')
+        advert.airtable_client.insert.assert_not_called()
+        advert.refresh_from_db()
+        self.assertEqual(advert.airtable_record_id, 'recMatchedRecordId')
+
+    def test_create_object_with_missing_id_and_non_matching_airtable_record(self):
+        advert = Advert.objects.create(
+            title='Testing creation',
+            description='Lorem ipsum dolor sit amet, consectetur adipisicing elit.',
+            rating="2.5",
+            slug='a-non-matching-slug',
+            airtable_record_id='recMissingRecordId',
+        )
+        # save_to_airtable will find that a record with the given ID does not exist,
+        # and neither does one matching the slug - so it will create a new one
+        # and update the model with the new record ID
+        advert.airtable_client.get.assert_called_once_with('recMissingRecordId')
+        advert.airtable_client.search.assert_called_once_with('slug', 'a-non-matching-slug')
+        advert.airtable_client.insert.assert_called_once()
+        call_args = advert.airtable_client.insert.call_args.args
+        self.assertEqual(call_args[0]['title'], 'Testing creation')
+        advert.airtable_client.update.assert_not_called()
+        advert.refresh_from_db()
+        self.assertEqual(advert.airtable_record_id, 'recNewRecordId')
+
+    def test_edit_object(self):
+        advert = Advert.objects.get(airtable_record_id='recNewRecordId')
         advert.title = "Edited title"
         advert.description = "Edited description"
         advert.save()
-        advert.airtable_client.update.assert_called()
-        self.assertTrue(advert._ran_airtable_setup)
-        self.assertTrue(advert._is_enabled)
-        self.assertTrue(advert._push_to_airtable)
+        # save_to_airtable will confirm that a record with the given ID exists and update it
+        advert.airtable_client.get.assert_called_once_with('recNewRecordId')
+        advert.airtable_client.update.assert_called_once_with('recNewRecordId', ANY)
+        call_args = advert.airtable_client.update.call_args.args
+        advert.airtable_client.insert.assert_not_called()
+        self.assertEqual(call_args[1]['title'], 'Edited title')
         self.assertEqual(advert.title, "Edited title")
 
     def test_delete_object(self):
         advert = Advert.objects.get(slug='delete-me')
-        # If we werent mocking the Airtable.update() method, we'd assert advert.airtable_client.insert
         self.assertEqual(advert.airtable_record_id, 'recNewRecordId')
         advert.delete()
+        advert.airtable_client.delete.assert_called_once_with('recNewRecordId')
         find_deleted_advert = Advert.objects.filter(slug='delete-me').count()
         self.assertEqual(find_deleted_advert, 0)
 
@@ -118,9 +182,9 @@ class TestAirtableMixin(TestCase):
 
     def test_setup_airtable(self):
         advert = copy(self.advert)
-        self.assertEqual(advert._ran_airtable_setup, False)
-        self.assertEqual(advert._is_enabled, False)
-        self.assertEqual(advert._push_to_airtable, False)
+        self.assertFalse(advert._ran_airtable_setup)
+        self.assertFalse(advert._is_enabled)
+        self.assertFalse(advert._push_to_airtable)
         self.assertFalse(hasattr(advert, 'airtable_client'))
 
         advert.setup_airtable()
@@ -128,21 +192,10 @@ class TestAirtableMixin(TestCase):
         self.assertEqual(advert.AIRTABLE_BASE_KEY, 'app_airtable_advert_base_key')
         self.assertEqual(advert.AIRTABLE_TABLE_NAME, 'Advert Table Name')
         self.assertEqual(advert.AIRTABLE_UNIQUE_IDENTIFIER, 'slug')
-        self.assertEqual(advert._ran_airtable_setup, True)
-        self.assertEqual(advert._is_enabled, True)
-        self.assertEqual(advert._push_to_airtable, True)
+        self.assertTrue(advert._ran_airtable_setup)
+        self.assertTrue(advert._is_enabled)
+        self.assertTrue(advert._push_to_airtable)
         self.assertTrue(hasattr(advert, 'airtable_client'))
-
-    def test_create_and_attach_airtable_record(self):
-        advert = copy(self.advert)
-        self.assertEqual(advert.airtable_record_id, '')
-
-        advert.setup_airtable()
-        advert.save()
-
-        advert.airtable_client.update.assert_called()
-        advert.airtable_client.insert.assert_not_called()
-        self.assertEqual(advert.airtable_record_id, 'recNewRecordId')
 
     def test_delete_record(self):
         advert = copy(self.advert)
@@ -183,38 +236,3 @@ class TestAirtableMixin(TestCase):
         record_exists = advert.check_record_exists('recNewRecordId')
         self.assertTrue(record_exists)
         advert.airtable_client.get.assert_called()
-
-    def test_is_airtable_enabled(self):
-        advert = copy(self.advert)
-        self.assertFalse(advert._ran_airtable_setup)
-        self.assertFalse(advert._is_enabled)
-        advert.setup_airtable()
-        self.assertTrue(advert._ran_airtable_setup)
-        self.assertTrue(advert._is_enabled)
-
-    def test_save(self):
-        advert = copy(self.advert)
-        self.assertFalse(advert._ran_airtable_setup)
-        self.assertFalse(advert._push_to_airtable)
-        self.assertFalse(advert._is_enabled)
-        self.assertEqual(advert.airtable_record_id, '')
-
-        advert.setup_airtable()
-        self.assertTrue(advert._ran_airtable_setup)
-        self.assertTrue(advert._push_to_airtable)
-        self.assertTrue(advert._is_enabled)
-
-        self.assertEqual(advert.airtable_record_id, '')
-
-        advert.save()
-        self.assertEqual(advert.airtable_record_id, 'recNewRecordId')
-        advert.airtable_client.update.assert_called()
-        advert.airtable_client.insert.assert_not_called()
-
-    def test_delete(self):
-        advert = copy(self.advert)
-        advert.setup_airtable()
-
-        deleted = advert.delete_record()
-        self.assertTrue(deleted)
-        advert.airtable_client.delete.assert_called()
