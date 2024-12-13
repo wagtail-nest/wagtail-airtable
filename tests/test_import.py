@@ -1,5 +1,6 @@
+import copy
 from django.conf import settings
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from unittest.mock import MagicMock, patch
 from wagtail import hooks
 from wagtail.models import Page
@@ -214,4 +215,132 @@ class TestImportClass(TestCase):
         hook_fn.assert_called_once_with(instance=page, is_wagtail_page=True, record_id="test-created-page-id")
         self.assertEqual(page.title, "A simple page")
         self.assertEqual(page.slug, "a-simple-page")
+        self.assertEqual(page.intro, "How much more simple can it get? And the answer is none. None more simple.")
+        self.assertFalse(page.live)
+
+    @patch('wagtail_airtable.mixins.Airtable')
+    def test_create_and_publish_page(self, mixin_airtable):
+        new_settings = copy.deepcopy(settings.AIRTABLE_IMPORT_SETTINGS)
+        new_settings['tests.SimplePage']['AUTO_PUBLISH_NEW_PAGES'] = True
+        with override_settings(AIRTABLE_IMPORT_SETTINGS=new_settings):
+            importer = AirtableModelImporter(model=SimplePage)
+            self.assertEqual(Page.objects.get(slug="home").get_children().count(), 0)
+
+            self.mock_airtable.get_all.return_value = [{
+                "id": "test-created-page-id",
+                "fields": {
+                    "title": "A simple page",
+                    "slug": "a-simple-page",
+                    "intro": "How much more simple can it get? And the answer is none. None more simple.",
+                },
+            }]
+            hook_fn = MagicMock()
+            with hooks.register_temporarily("airtable_import_record_updated", hook_fn):
+                created_result = next(importer.run())
+            self.assertTrue(created_result.new)
+            self.assertIsNone(created_result.errors)
+
+            page = Page.objects.get(slug="home").get_children().first().specific
+            self.assertIsInstance(page, SimplePage)
+            hook_fn.assert_called_once_with(instance=page, is_wagtail_page=True, record_id="test-created-page-id")
+            self.assertEqual(page.title, "A simple page")
+            self.assertEqual(page.slug, "a-simple-page")
+            self.assertEqual(page.intro, "How much more simple can it get? And the answer is none. None more simple.")
+            self.assertTrue(page.live)
+
+    @patch('wagtail_airtable.mixins.Airtable')
+    def test_update_page(self, mixin_airtable):
+        importer = AirtableModelImporter(model=SimplePage)
+        parent_page = Page.objects.get(slug="home")
+        page = SimplePage(
+            title="A simple page",
+            slug="a-simple-page",
+            intro="How much more simple can it get? And the answer is none. None more simple.",
+        )
+        page.push_to_airtable = False
+        parent_page.add_child(instance=page)
+        self.assertEqual(page.revisions.count(), 0)
+
+        self.mock_airtable.get_all.return_value = [{
+            "id": "test-created-page-id",
+            "fields": {
+                "title": "A simple page",
+                "slug": "a-simple-page",
+                "intro": "How much more simple can it get? Oh, actually it can get more simple.",
+            },
+        }]
+        hook_fn = MagicMock()
+        with hooks.register_temporarily("airtable_import_record_updated", hook_fn):
+            updated_result = next(importer.run())
+        self.assertFalse(updated_result.new)
+        self.assertIsNone(updated_result.errors)
+
+        page.refresh_from_db()
+        hook_fn.assert_called_once_with(instance=page, is_wagtail_page=True, record_id="test-created-page-id")
+        self.assertEqual(page.title, "A simple page")
+        self.assertEqual(page.slug, "a-simple-page")
+        self.assertEqual(page.intro, "How much more simple can it get? Oh, actually it can get more simple.")
+        self.assertEqual(page.revisions.count(), 1)
+
+    @patch('wagtail_airtable.mixins.Airtable')
+    def test_skip_update_page_if_unchanged(self, mixin_airtable):
+        importer = AirtableModelImporter(model=SimplePage)
+        parent_page = Page.objects.get(slug="home")
+        page = SimplePage(
+            title="A simple page",
+            slug="a-simple-page",
+            intro="How much more simple can it get? And the answer is none. None more simple.",
+        )
+        page.push_to_airtable = False
+        parent_page.add_child(instance=page)
+        self.assertEqual(page.revisions.count(), 0)
+
+        self.mock_airtable.get_all.return_value = [{
+            "id": "test-created-page-id",
+            "fields": {
+                "title": "A simple page",
+                "slug": "a-simple-page",
+                "intro": "How much more simple can it get? And the answer is none. None more simple.",
+            },
+        }]
+        hook_fn = MagicMock()
+        with hooks.register_temporarily("airtable_import_record_updated", hook_fn):
+            updated_result = next(importer.run())
+        self.assertFalse(updated_result.new)
+        self.assertIsNone(updated_result.errors)
+        hook_fn.assert_not_called()
+
+        self.assertEqual(page.revisions.count(), 0)
+
+    @patch('wagtail_airtable.mixins.Airtable')
+    def test_skip_update_page_if_locked(self, mixin_airtable):
+        importer = AirtableModelImporter(model=SimplePage)
+        parent_page = Page.objects.get(slug="home")
+        page = SimplePage(
+            title="A simple page",
+            slug="a-simple-page",
+            intro="How much more simple can it get? And the answer is none. None more simple.",
+        )
+        page.push_to_airtable = False
+        page.locked = True
+        parent_page.add_child(instance=page)
+        self.assertEqual(page.revisions.count(), 0)
+
+        self.mock_airtable.get_all.return_value = [{
+            "id": "test-created-page-id",
+            "fields": {
+                "title": "A simple page",
+                "slug": "a-simple-page",
+                "intro": "How much more simple can it get? Oh, actually it can get more simple.",
+            },
+        }]
+        hook_fn = MagicMock()
+        with hooks.register_temporarily("airtable_import_record_updated", hook_fn):
+            updated_result = next(importer.run())
+        self.assertFalse(updated_result.new)
+        self.assertIsNone(updated_result.errors)
+        hook_fn.assert_not_called()
+
+        self.assertEqual(page.revisions.count(), 0)
+        page.refresh_from_db()
         self.assertEqual(page.intro, "How much more simple can it get? And the answer is none. None more simple.")
