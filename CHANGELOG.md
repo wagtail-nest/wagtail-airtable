@@ -1,9 +1,11 @@
 # Changelog
 
-## 0.8.0 (xx.xx.xxxx)
+## 1.0.0 (xx.xx.xxxx)
 
+* **Breaking**: Callables passed as `PARENT_PAGE_ID` no longer accept an `instance` argument (Matt Westcott)
 * Add support for Wagtail 6.1 - 6.3 (Matt Westcott)
 * Update testing to include Python 3.13, Django 5.1 (Matt Westcott)
+* Rewrite importer module for robustness and better performance (Jake Howard, Matt Westcott)
 * Drop support for Python 3.8 (Matt Westcott)
 
 ## 0.7.0 (06.02.2024)
