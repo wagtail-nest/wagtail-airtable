@@ -1,7 +1,7 @@
 from django.conf import settings
-from django.core.management import call_command
-from django.test import TestCase, TransactionTestCase
-from unittest.mock import patch
+from django.test import TestCase
+from unittest.mock import MagicMock, patch
+from wagtail import hooks
 from wagtail.models import Page
 
 from tests.models import Advert, ModelNotUsed, SimilarToAdvert, SimplePage
@@ -99,10 +99,14 @@ class TestImportClass(TestCase):
         advert = Advert.objects.get(airtable_record_id="recNewRecordId")
         self.assertNotEqual(advert.title, "Red! It's the new blue!")
         self.assertEqual(len(advert.publications.all()), 0)
-        updated_result = next(result for result in importer.run() if not result.new)
+
+        hook_fn = MagicMock()
+        with hooks.register_temporarily("airtable_import_record_updated", hook_fn):
+            updated_result = next(result for result in importer.run() if not result.new)
 
         self.assertEqual(updated_result.record_id, advert.airtable_record_id)
         self.assertIsNone(updated_result.errors)
+        hook_fn.assert_called_once_with(instance=advert, is_wagtail_page=False, record_id="recNewRecordId")
 
         advert.refresh_from_db()
         self.assertEqual(advert.title, "Red! It's the new blue!")
@@ -132,11 +136,16 @@ class TestImportClass(TestCase):
                 ],
             },
         }]
-        created_result = next(importer.run())
+
+        hook_fn = MagicMock()
+        with hooks.register_temporarily("airtable_import_record_updated", hook_fn):
+            created_result = next(importer.run())
+
         self.assertTrue(created_result.new)
         self.assertIsNone(created_result.errors)
 
         advert = Advert.objects.get(airtable_record_id=created_result.record_id)
+        hook_fn.assert_called_once_with(instance=advert, is_wagtail_page=False, record_id="test-created-id")
         self.assertEqual(advert.title, "The created one")
         self.assertEqual(advert.slug, "test-created")
         self.assertEqual(len(advert.publications.all()), 3)
@@ -194,12 +203,15 @@ class TestImportClass(TestCase):
                 "intro": "How much more simple can it get? And the answer is none. None more simple.",
             },
         }]
-        created_result = next(importer.run())
+        hook_fn = MagicMock()
+        with hooks.register_temporarily("airtable_import_record_updated", hook_fn):
+            created_result = next(importer.run())
         self.assertTrue(created_result.new)
         self.assertIsNone(created_result.errors)
 
         page = Page.objects.get(slug="home").get_children().first().specific
         self.assertIsInstance(page, SimplePage)
+        hook_fn.assert_called_once_with(instance=page, is_wagtail_page=True, record_id="test-created-page-id")
         self.assertEqual(page.title, "A simple page")
         self.assertEqual(page.slug, "a-simple-page")
         self.assertEqual(page.intro, "How much more simple can it get? And the answer is none. None more simple.")

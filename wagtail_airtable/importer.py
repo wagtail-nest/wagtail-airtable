@@ -4,6 +4,7 @@ from django.conf import settings
 from django.db.models.fields.related import ManyToManyField
 from modelcluster.contrib.taggit import ClusterTaggableManager
 from taggit.managers import TaggableManager
+from wagtail import hooks
 from wagtail.models import Page
 from .utils import import_string
 from typing import NamedTuple, Optional
@@ -171,6 +172,10 @@ class AirtableModelImporter:
         if self.model_is_page:
             # When saving a page, create it as a new revision
             instance.save_revision()
+
+        for fn in hooks.get_hooks("airtable_import_record_updated"):
+            fn(instance=instance, is_wagtail_page=self.model_is_page, record_id=record_id)
+
         return True
 
     def create_object(self, data, record_id):
@@ -206,6 +211,9 @@ class AirtableModelImporter:
             new_model.save()
             for field_name, value in m2m_data.items():
                 getattr(new_model, field_name).set(value)
+
+        for fn in hooks.get_hooks("airtable_import_record_updated"):
+            fn(instance=new_model, is_wagtail_page=self.model_is_page, record_id=record_id)
 
     def get_existing_instance(self, record_id, unique_identifier):
         existing_by_record_id = self.model.objects.filter(airtable_record_id=record_id).first()
