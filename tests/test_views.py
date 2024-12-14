@@ -11,10 +11,10 @@ class TestAdminViews(TestCase):
     fixtures = ['test.json']
 
     def setUp(self):
-        airtable_mixins_patcher = patch("wagtail_airtable.mixins.Airtable", new_callable=get_mock_airtable())
+        airtable_mixins_patcher = patch("wagtail_airtable.mixins.Api", new_callable=get_mock_airtable())
         airtable_mixins_patcher.start()
         self.addCleanup(airtable_mixins_patcher.stop)
-        airtable_importer_patcher = patch("wagtail_airtable.importer.Airtable", new_callable=get_mock_airtable())
+        airtable_importer_patcher = patch("wagtail_airtable.importer.Api", new_callable=get_mock_airtable())
         self.mock_airtable = airtable_importer_patcher.start()
         self.addCleanup(airtable_importer_patcher.stop)
 

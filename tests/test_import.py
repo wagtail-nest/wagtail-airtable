@@ -119,6 +119,7 @@ class TestImportClass(TestCase):
         importer = AirtableModelImporter(model=Advert)
         self.assertFalse(Advert.objects.filter(slug="test-created").exists())
         self.assertFalse(Advert.objects.filter(airtable_record_id="test-created-id").exists())
+        self.mock_airtable._table.all.side_effect = None
         self.mock_airtable._table.all.return_value = [{
             "id": "test-created-id",
             "fields": {
@@ -155,6 +156,7 @@ class TestImportClass(TestCase):
         advert = Advert.objects.get(airtable_record_id="recNewRecordId")
         importer = AirtableModelImporter(model=Advert)
         self.assertNotEqual(advert.description, "Red is a scientifically proven..")
+        self.mock_airtable._table.all.side_effect = None
         self.mock_airtable._table.all.return_value = [
             {
                 "id": "recNewRecordId",
@@ -202,6 +204,7 @@ class TestImportClass(TestCase):
         importer = AirtableModelImporter(model=SimplePage)
         self.assertEqual(Page.objects.get(slug="home").get_children().count(), 0)
 
+        self.mock_airtable._table.all.side_effect = None
         self.mock_airtable._table.all.return_value = [{
             "id": "test-created-page-id",
             "fields": {
@@ -232,6 +235,7 @@ class TestImportClass(TestCase):
             importer = AirtableModelImporter(model=SimplePage)
             self.assertEqual(Page.objects.get(slug="home").get_children().count(), 0)
 
+            self.mock_airtable._table.all.side_effect = None
             self.mock_airtable._table.all.return_value = [{
                 "id": "test-created-page-id",
                 "fields": {
@@ -267,6 +271,7 @@ class TestImportClass(TestCase):
         parent_page.add_child(instance=page)
         self.assertEqual(page.revisions.count(), 0)
 
+        self.mock_airtable._table.all.side_effect = None
         self.mock_airtable._table.all.return_value = [{
             "id": "test-created-page-id",
             "fields": {
@@ -301,6 +306,7 @@ class TestImportClass(TestCase):
         parent_page.add_child(instance=page)
         self.assertEqual(page.revisions.count(), 0)
 
+        self.mock_airtable._table.all.side_effect = None
         self.mock_airtable._table.all.return_value = [{
             "id": "test-created-page-id",
             "fields": {
@@ -332,6 +338,7 @@ class TestImportClass(TestCase):
         parent_page.add_child(instance=page)
         self.assertEqual(page.revisions.count(), 0)
 
+        self.mock_airtable._table.all.side_effect = None
         self.mock_airtable._table.all.return_value = [{
             "id": "test-created-page-id",
             "fields": {

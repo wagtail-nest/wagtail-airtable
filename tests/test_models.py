@@ -1,6 +1,7 @@
 from copy import copy
 
 from django.test import TestCase
+from pyairtable.formulas import match
 
 from tests.models import Advert, SimplePage
 from wagtail_airtable.mixins import AirtableMixin
@@ -12,7 +13,7 @@ class TestAirtableModel(TestCase):
     fixtures = ['test.json']
 
     def setUp(self):
-        airtable_patcher = patch("wagtail_airtable.mixins.Airtable", new_callable=get_mock_airtable())
+        airtable_patcher = patch("wagtail_airtable.mixins.Api", new_callable=get_mock_airtable())
         airtable_patcher.start()
         self.addCleanup(airtable_patcher.stop)
 
@@ -85,11 +86,11 @@ class TestAirtableModel(TestCase):
         )
         # save_to_airtable will confirm that a record with the given ID exists
         # and update that record
-        advert.airtable_client.get.assert_called_once_with('recNewRecordId')
-        advert.airtable_client.update.assert_called_once_with('recNewRecordId', ANY)
-        call_args = advert.airtable_client.update.call_args.args
+        advert.airtable_client._table.get.assert_called_once_with('recNewRecordId')
+        advert.airtable_client._table.update.assert_called_once_with('recNewRecordId', ANY)
+        call_args = advert.airtable_client._table.update.call_args.args
         self.assertEqual(call_args[1]['title'], 'Testing creation')
-        advert.airtable_client.insert.assert_not_called()
+        advert.airtable_client._table.create.assert_not_called()
 
     def test_create_object_with_missing_id_and_matching_airtable_record(self):
         advert = Advert.objects.create(
@@ -101,12 +102,12 @@ class TestAirtableModel(TestCase):
         )
         # save_to_airtable will find that a record with the given ID does not exist,
         # but one matching the slug does, and update that record
-        advert.airtable_client.get.assert_called_once_with('recMissingRecordId')
-        advert.airtable_client.search.assert_called_once_with('slug', 'a-matching-slug')
-        advert.airtable_client.update.assert_called_once_with('recMatchedRecordId', ANY)
-        call_args = advert.airtable_client.update.call_args.args
+        advert.airtable_client._table.get.assert_called_once_with('recMissingRecordId')
+        advert.airtable_client._table.all.assert_called_once_with(formula=match({'slug': 'a-matching-slug'}))
+        advert.airtable_client._table.update.assert_called_once_with('recMatchedRecordId', ANY)
+        call_args = advert.airtable_client._table.update.call_args.args
         self.assertEqual(call_args[1]['title'], 'Testing creation')
-        advert.airtable_client.insert.assert_not_called()
+        advert.airtable_client._table.create.assert_not_called()
         advert.refresh_from_db()
         self.assertEqual(advert.airtable_record_id, 'recMatchedRecordId')
 
@@ -119,12 +120,12 @@ class TestAirtableModel(TestCase):
         )
         # save_to_airtable will skip the lookup by ID, but find a record matching the slug,
         # and update that record
-        advert.airtable_client.get.assert_not_called()
-        advert.airtable_client.search.assert_called_once_with('slug', 'a-matching-slug')
-        advert.airtable_client.update.assert_called_once_with('recMatchedRecordId', ANY)
-        call_args = advert.airtable_client.update.call_args.args
+        advert.airtable_client._table.get.assert_not_called()
+        advert.airtable_client._table.all.assert_called_once_with(formula=match({'slug': 'a-matching-slug'}))
+        advert.airtable_client._table.update.assert_called_once_with('recMatchedRecordId', ANY)
+        call_args = advert.airtable_client._table.update.call_args.args
         self.assertEqual(call_args[1]['title'], 'Testing creation')
-        advert.airtable_client.insert.assert_not_called()
+        advert.airtable_client._table.create.assert_not_called()
         advert.refresh_from_db()
         self.assertEqual(advert.airtable_record_id, 'recMatchedRecordId')
 
@@ -139,12 +140,12 @@ class TestAirtableModel(TestCase):
         # save_to_airtable will find that a record with the given ID does not exist,
         # and neither does one matching the slug - so it will create a new one
         # and update the model with the new record ID
-        advert.airtable_client.get.assert_called_once_with('recMissingRecordId')
-        advert.airtable_client.search.assert_called_once_with('slug', 'a-non-matching-slug')
-        advert.airtable_client.insert.assert_called_once()
-        call_args = advert.airtable_client.insert.call_args.args
+        advert.airtable_client._table.get.assert_called_once_with('recMissingRecordId')
+        advert.airtable_client._table.all.assert_called_once_with(formula=match({'slug': 'a-non-matching-slug'}))
+        advert.airtable_client._table.create.assert_called_once()
+        call_args = advert.airtable_client._table.create.call_args.args
         self.assertEqual(call_args[0]['title'], 'Testing creation')
-        advert.airtable_client.update.assert_not_called()
+        advert.airtable_client._table.update.assert_not_called()
         advert.refresh_from_db()
         self.assertEqual(advert.airtable_record_id, 'recNewRecordId')
 
@@ -154,10 +155,10 @@ class TestAirtableModel(TestCase):
         advert.description = "Edited description"
         advert.save()
         # save_to_airtable will confirm that a record with the given ID exists and update it
-        advert.airtable_client.get.assert_called_once_with('recNewRecordId')
-        advert.airtable_client.update.assert_called_once_with('recNewRecordId', ANY)
-        call_args = advert.airtable_client.update.call_args.args
-        advert.airtable_client.insert.assert_not_called()
+        advert.airtable_client._table.get.assert_called_once_with('recNewRecordId')
+        advert.airtable_client._table.update.assert_called_once_with('recNewRecordId', ANY)
+        call_args = advert.airtable_client._table.update.call_args.args
+        advert.airtable_client._table.create.assert_not_called()
         self.assertEqual(call_args[1]['title'], 'Edited title')
         self.assertEqual(advert.title, "Edited title")
 
@@ -165,7 +166,7 @@ class TestAirtableModel(TestCase):
         advert = Advert.objects.get(slug='delete-me')
         self.assertEqual(advert.airtable_record_id, 'recNewRecordId')
         advert.delete()
-        advert.airtable_client.delete.assert_called_once_with('recNewRecordId')
+        advert.airtable_client._table.delete.assert_called_once_with('recNewRecordId')
         find_deleted_advert = Advert.objects.filter(slug='delete-me').count()
         self.assertEqual(find_deleted_advert, 0)
 
@@ -174,7 +175,7 @@ class TestAirtableMixin(TestCase):
     fixtures = ['test.json']
 
     def setUp(self):
-        airtable_patcher = patch("wagtail_airtable.mixins.Airtable", new_callable=get_mock_airtable())
+        airtable_patcher = patch("wagtail_airtable.mixins.Api", new_callable=get_mock_airtable())
         self.mock_airtable = airtable_patcher.start()
         self.addCleanup(airtable_patcher.stop)
 
@@ -200,7 +201,7 @@ class TestAirtableMixin(TestCase):
         advert.setup_airtable()
         deleted = advert.delete_record()
         self.assertTrue(deleted)
-        advert.airtable_client.delete.assert_called_once_with("recNewRecordId")
+        advert.airtable_client._table.delete.assert_called_once_with("recNewRecordId")
 
     def test_parse_request_error(self):
         error_401 = "401 Client Error: Unauthorized for url: https://api.airtable.com/v0/appYourAppId/Your%20Table?filterByFormula=.... [Error: {'type': 'AUTHENTICATION_REQUIRED', 'message': 'Authentication required'}]"
@@ -226,18 +227,18 @@ class TestAirtableMixin(TestCase):
         advert.setup_airtable()
         record_id = advert.match_record()
         self.assertEqual(record_id, 'recNewRecordId')
-        advert.airtable_client.search.assert_called_once_with('slug', 'red-its-new-blue')
+        advert.airtable_client._table.all.assert_called_once_with(formula=match({'slug': 'red-its-new-blue'}))
 
     def test_match_record_with_dict_identifier(self):
         page = SimplePage.objects.get(slug='home')
         page.setup_airtable()
         record_id = page.match_record()
         self.assertEqual(record_id, 'recHomePageId')
-        page.airtable_client.search.assert_called_once_with('Page Slug', 'home')
+        page.airtable_client._table.all.assert_called_once_with(formula=match({'Page Slug': 'home'}))
 
     def test_check_record_exists(self):
         advert = Advert.objects.get(airtable_record_id='recNewRecordId')
         advert.setup_airtable()
         record_exists = advert.check_record_exists('recNewRecordId')
         self.assertTrue(record_exists)
-        advert.airtable_client.get.assert_called_once_with('recNewRecordId')
+        advert.airtable_client._table.get.assert_called_once_with('recNewRecordId')
