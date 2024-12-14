@@ -1,5 +1,5 @@
 import logging
-from airtable import Airtable
+from pyairtable import Api
 from django.conf import settings
 from django.db.models.fields.related import ManyToManyField
 from modelcluster.contrib.taggit import ClusterTaggableManager
@@ -97,10 +97,10 @@ class AirtableModelImporter:
         if verbosity >= 2:
             logger.setLevel(logging.DEBUG)
 
-        self.airtable_client = Airtable(
+        api = Api(api_key=settings.AIRTABLE_API_KEY)
+        self.airtable_client = api.table(
             self.model_settings.get("AIRTABLE_BASE_KEY"),
             self.model_settings.get("AIRTABLE_TABLE_NAME"),
-            api_key=settings.AIRTABLE_API_KEY,
         )
 
         (
@@ -276,7 +276,7 @@ class AirtableModelImporter:
             return AirtableImportResult(record_id, fields, new=True)
 
     def run(self):
-        for page in self.airtable_client.get_iter():
+        for page in self.airtable_client.iterate():
             for record in page:
                 logger.info("Processing record %s", record["id"])
                 yield self.process_record(record)
