@@ -34,7 +34,7 @@ requires-python = ">=3.8"
 dependencies = [
     "Wagtail>=5.2",
     "Django>=4.2",
-    "airtable-python-wrapper>=0.13.0,<0.14",
+    "pyairtable>=2.3,<3",
     "djangorestframework>=3.11.0"
 ]
 
