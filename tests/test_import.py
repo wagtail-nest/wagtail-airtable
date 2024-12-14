@@ -16,7 +16,7 @@ class TestImportClass(TestCase):
     fixtures = ['test.json']
 
     def setUp(self):
-        airtable_patcher = patch("wagtail_airtable.importer.Airtable", new_callable=get_mock_airtable())
+        airtable_patcher = patch("wagtail_airtable.importer.Api", new_callable=get_mock_airtable())
         self.mock_airtable = airtable_patcher.start()
         self.addCleanup(airtable_patcher.stop)
 
@@ -114,12 +114,12 @@ class TestImportClass(TestCase):
         self.assertEqual(updated_result.record_id, "recNewRecordId")
         self.assertEqual(len(advert.publications.all()), 3)
 
-    @patch('wagtail_airtable.mixins.Airtable')
+    @patch('wagtail_airtable.mixins.Api')
     def test_create_object(self, mixin_airtable):
         importer = AirtableModelImporter(model=Advert)
         self.assertFalse(Advert.objects.filter(slug="test-created").exists())
         self.assertFalse(Advert.objects.filter(airtable_record_id="test-created-id").exists())
-        self.mock_airtable.get_all.return_value = [{
+        self.mock_airtable._table.all.return_value = [{
             "id": "test-created-id",
             "fields": {
                 "title": "The created one",
@@ -155,12 +155,18 @@ class TestImportClass(TestCase):
         advert = Advert.objects.get(airtable_record_id="recNewRecordId")
         importer = AirtableModelImporter(model=Advert)
         self.assertNotEqual(advert.description, "Red is a scientifically proven..")
-        self.mock_airtable.get_all()[0]['fields'] = {
-            "SEO Description": "Red is a scientifically proven...",
-            "External Link": "https://example.com/",
-            "slug": "red-its-new-blue",
-            "Rating": "2.5",
-        }
+        self.mock_airtable._table.all.return_value = [
+            {
+                "id": "recNewRecordId",
+                "fields": {
+                    "SEO Description": "Red is a scientifically proven...",
+                    "External Link": "https://example.com/",
+                    "slug": "red-its-new-blue",
+                    "Rating": "2.5",
+                }
+            },
+        ]
+
         result = next(importer.run())
         self.assertEqual(result.errors, {'title': ['This field is required.']})
         advert.refresh_from_db()
@@ -191,12 +197,12 @@ class TestImportClass(TestCase):
         self.assertIsNone(data_for_new_model.get('id'))
         self.assertIsNone(data_for_new_model.get('pk'))
 
-    @patch('wagtail_airtable.mixins.Airtable')
+    @patch('wagtail_airtable.mixins.Api')
     def test_create_page(self, mixin_airtable):
         importer = AirtableModelImporter(model=SimplePage)
         self.assertEqual(Page.objects.get(slug="home").get_children().count(), 0)
 
-        self.mock_airtable.get_all.return_value = [{
+        self.mock_airtable._table.all.return_value = [{
             "id": "test-created-page-id",
             "fields": {
                 "title": "A simple page",
@@ -218,7 +224,7 @@ class TestImportClass(TestCase):
         self.assertEqual(page.intro, "How much more simple can it get? And the answer is none. None more simple.")
         self.assertFalse(page.live)
 
-    @patch('wagtail_airtable.mixins.Airtable')
+    @patch('wagtail_airtable.mixins.Api')
     def test_create_and_publish_page(self, mixin_airtable):
         new_settings = copy.deepcopy(settings.AIRTABLE_IMPORT_SETTINGS)
         new_settings['tests.SimplePage']['AUTO_PUBLISH_NEW_PAGES'] = True
@@ -226,7 +232,7 @@ class TestImportClass(TestCase):
             importer = AirtableModelImporter(model=SimplePage)
             self.assertEqual(Page.objects.get(slug="home").get_children().count(), 0)
 
-            self.mock_airtable.get_all.return_value = [{
+            self.mock_airtable._table.all.return_value = [{
                 "id": "test-created-page-id",
                 "fields": {
                     "title": "A simple page",
@@ -248,7 +254,7 @@ class TestImportClass(TestCase):
             self.assertEqual(page.intro, "How much more simple can it get? And the answer is none. None more simple.")
             self.assertTrue(page.live)
 
-    @patch('wagtail_airtable.mixins.Airtable')
+    @patch('wagtail_airtable.mixins.Api')
     def test_update_page(self, mixin_airtable):
         importer = AirtableModelImporter(model=SimplePage)
         parent_page = Page.objects.get(slug="home")
@@ -261,7 +267,7 @@ class TestImportClass(TestCase):
         parent_page.add_child(instance=page)
         self.assertEqual(page.revisions.count(), 0)
 
-        self.mock_airtable.get_all.return_value = [{
+        self.mock_airtable._table.all.return_value = [{
             "id": "test-created-page-id",
             "fields": {
                 "title": "A simple page",
@@ -282,7 +288,7 @@ class TestImportClass(TestCase):
         self.assertEqual(page.intro, "How much more simple can it get? Oh, actually it can get more simple.")
         self.assertEqual(page.revisions.count(), 1)
 
-    @patch('wagtail_airtable.mixins.Airtable')
+    @patch('wagtail_airtable.mixins.Api')
     def test_skip_update_page_if_unchanged(self, mixin_airtable):
         importer = AirtableModelImporter(model=SimplePage)
         parent_page = Page.objects.get(slug="home")
@@ -295,7 +301,7 @@ class TestImportClass(TestCase):
         parent_page.add_child(instance=page)
         self.assertEqual(page.revisions.count(), 0)
 
-        self.mock_airtable.get_all.return_value = [{
+        self.mock_airtable._table.all.return_value = [{
             "id": "test-created-page-id",
             "fields": {
                 "title": "A simple page",
@@ -312,7 +318,7 @@ class TestImportClass(TestCase):
 
         self.assertEqual(page.revisions.count(), 0)
 
-    @patch('wagtail_airtable.mixins.Airtable')
+    @patch('wagtail_airtable.mixins.Api')
     def test_skip_update_page_if_locked(self, mixin_airtable):
         importer = AirtableModelImporter(model=SimplePage)
         parent_page = Page.objects.get(slug="home")
@@ -326,7 +332,7 @@ class TestImportClass(TestCase):
         parent_page.add_child(instance=page)
         self.assertEqual(page.revisions.count(), 0)
 
-        self.mock_airtable.get_all.return_value = [{
+        self.mock_airtable._table.all.return_value = [{
             "id": "test-created-page-id",
             "fields": {
                 "title": "A simple page",
