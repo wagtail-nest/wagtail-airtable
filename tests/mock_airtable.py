@@ -1,5 +1,6 @@
 """A mocked Airtable API wrapper."""
 from unittest import mock
+from pyairtable.formulas import match
 from requests.exceptions import HTTPError
 
 def get_mock_airtable():
@@ -7,14 +8,14 @@ def get_mock_airtable():
     Wrap it in a function, so it's pure
     """
 
-    class MockAirtable(mock.Mock):
-        def get_iter(self):
-            return [self.get_all()]
+    class MockTable(mock.Mock):
+        def iterate(self):
+            return [self.all()]
 
 
-    MockAirtable.table_name = "app_airtable_advert_base_key"
+    MockTable.table_name = "app_airtable_advert_base_key"
 
-    MockAirtable.get = mock.MagicMock("get")
+    MockTable.get = mock.MagicMock("get")
 
     def get_fn(record_id):
         if record_id == "recNewRecordId":
@@ -34,11 +35,11 @@ def get_mock_airtable():
         else:
             raise HTTPError("404 Client Error: Not Found")
 
-    MockAirtable.get.side_effect = get_fn
+    MockTable.get.side_effect = get_fn
 
-    MockAirtable.insert = mock.MagicMock("insert")
+    MockTable.create = mock.MagicMock("create")
 
-    MockAirtable.insert.return_value = {
+    MockTable.create.return_value = {
         "id": "recNewRecordId",
         "fields": {
             "title": "Red! It's the new blue!",
@@ -52,8 +53,8 @@ def get_mock_airtable():
         },
     }
 
-    MockAirtable.update = mock.MagicMock("update")
-    MockAirtable.update.return_value = {
+    MockTable.update = mock.MagicMock("update")
+    MockTable.update.return_value = {
         "id": "recNewRecordId",
         "fields": {
             "title": "Red! It's the new blue!",
@@ -67,12 +68,77 @@ def get_mock_airtable():
         },
     }
 
-    MockAirtable.delete = mock.MagicMock("delete")
-    MockAirtable.delete.return_value = {"deleted": True, "record": "recNewRecordId"}
+    MockTable.delete = mock.MagicMock("delete")
+    MockTable.delete.return_value = {"deleted": True, "record": "recNewRecordId"}
 
-    MockAirtable.search = mock.MagicMock("search")
-    def search_fn(field, value):
-        if field == "slug" and value == "red-its-new-blue":
+    MockTable.all = mock.MagicMock("all")
+    def all_fn(formula=None):
+        if formula is None:
+            return [
+                {
+                    "id": "recNewRecordId",
+                    "fields": {
+                        "title": "Red! It's the new blue!",
+                        "description": "Red is a scientifically proven color that moves faster than all other colors.",
+                        "external_link": "https://example.com/",
+                        "is_active": True,
+                        "rating": "1.5",
+                        "long_description": "<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veniam laboriosam consequatur saepe. Repellat itaque dolores neque, impedit reprehenderit eum culpa voluptates harum sapiente nesciunt ratione.</p>",
+                        "points": 95,
+                        "slug": "delete-me",
+                        "publications": [
+                            {"title": "Record 1 publication 1"},
+                            {"title": "Record 1 publication 2"},
+                            {"title": "Record 1 publication 3"},
+                        ]
+                    },
+                },
+                {
+                    "id": "Different record",
+                    "fields": {
+                        "title": "Not the used record.",
+                        "description": "This is only used for multiple responses from MockAirtable",
+                        "external_link": "https://example.com/",
+                        "is_active": False,
+                        "rating": "5.5",
+                        "long_description": "",
+                        "points": 1,
+                        "slug": "not-the-used-record",
+                    },
+                },
+                {
+                    "id": "recRecordThree",
+                    "fields": {
+                        "title": "A third record.",
+                        "description": "This is only used for multiple responses from MockAirtable",
+                        "external_link": "https://example.com/",
+                        "is_active": False,
+                        "rating": "5.5",
+                        "long_description": "",
+                        "points": 1,
+                        "slug": "record-3",
+                    },
+                },
+                {
+                    "id": "recRecordFour",
+                    "fields": {
+                        "title": "A fourth record.",
+                        "description": "This is only used for multiple responses from MockAirtable",
+                        "external_link": "https://example.com/",
+                        "is_active": False,
+                        "rating": "5.5",
+                        "long_description": "",
+                        "points": 1,
+                        "slug": "record-4",
+                        "publications": [
+                            {"title": "Record 4 publication 1"},
+                            {"title": "Record 4 publication 2"},
+                            {"title": "Record 4 publication 3"},
+                        ]
+                    },
+                },
+            ]
+        elif formula == match({"slug": "red-its-new-blue"}):
             return [
                 {
                     "id": "recNewRecordId",
@@ -101,7 +167,7 @@ def get_mock_airtable():
                     },
                 },
             ]
-        elif field == "slug" and value == "a-matching-slug":
+        elif formula == match({"slug": "a-matching-slug"}):
             return [
                 {
                     "id": "recMatchedRecordId",
@@ -117,7 +183,7 @@ def get_mock_airtable():
                     },
                 },
             ]
-        elif field == "Page Slug" and value == "home":
+        elif formula == match({"Page Slug": "home"}):
             return [
                 {
                     "id": "recHomePageId",
@@ -131,72 +197,14 @@ def get_mock_airtable():
         else:
             return []
 
-    MockAirtable.search.side_effect = search_fn
+    MockTable.all.side_effect = all_fn
 
-    MockAirtable.get_all = mock.MagicMock("get_all")
-    MockAirtable.get_all.return_value = [
-        {
-            "id": "recNewRecordId",
-            "fields": {
-                "title": "Red! It's the new blue!",
-                "description": "Red is a scientifically proven color that moves faster than all other colors.",
-                "external_link": "https://example.com/",
-                "is_active": True,
-                "rating": "1.5",
-                "long_description": "<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Veniam laboriosam consequatur saepe. Repellat itaque dolores neque, impedit reprehenderit eum culpa voluptates harum sapiente nesciunt ratione.</p>",
-                "points": 95,
-                "slug": "delete-me",
-                "publications": [
-                    {"title": "Record 1 publication 1"},
-                    {"title": "Record 1 publication 2"},
-                    {"title": "Record 1 publication 3"},
-                ]
-            },
-        },
-        {
-            "id": "Different record",
-            "fields": {
-                "title": "Not the used record.",
-                "description": "This is only used for multiple responses from MockAirtable",
-                "external_link": "https://example.com/",
-                "is_active": False,
-                "rating": "5.5",
-                "long_description": "",
-                "points": 1,
-                "slug": "not-the-used-record",
-            },
-        },
-        {
-            "id": "recRecordThree",
-            "fields": {
-                "title": "A third record.",
-                "description": "This is only used for multiple responses from MockAirtable",
-                "external_link": "https://example.com/",
-                "is_active": False,
-                "rating": "5.5",
-                "long_description": "",
-                "points": 1,
-                "slug": "record-3",
-            },
-        },
-        {
-            "id": "recRecordFour",
-            "fields": {
-                "title": "A fourth record.",
-                "description": "This is only used for multiple responses from MockAirtable",
-                "external_link": "https://example.com/",
-                "is_active": False,
-                "rating": "5.5",
-                "long_description": "",
-                "points": 1,
-                "slug": "record-4",
-                "publications": [
-                    {"title": "Record 4 publication 1"},
-                    {"title": "Record 4 publication 2"},
-                    {"title": "Record 4 publication 3"},
-                ]
-            },
-        },
-    ]
+    class MockApi(mock.Mock):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self._table = MockTable()
 
-    return MockAirtable
+        def table(self, base_id, table_name):
+            return self._table
+
+    return MockApi

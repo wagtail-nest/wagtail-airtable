@@ -1,7 +1,8 @@
 from ast import literal_eval
 from logging import getLogger
 
-from airtable import Airtable
+from pyairtable import Api
+from pyairtable.formulas import match
 from django.conf import settings
 from django.db import models
 from django.middleware.csrf import get_token
@@ -77,10 +78,10 @@ class AirtableMixin(models.Model):
                 and self.AIRTABLE_TABLE_NAME
                 and self.AIRTABLE_UNIQUE_IDENTIFIER
             ):
-                self.airtable_client = Airtable(
+                api = Api(api_key=settings.AIRTABLE_API_KEY)
+                self.airtable_client = api.table(
                     self.AIRTABLE_BASE_KEY,
                     self.AIRTABLE_TABLE_NAME,
-                    api_key=settings.AIRTABLE_API_KEY,
                 )
 
                 self._push_to_airtable = True
@@ -186,7 +187,7 @@ class AirtableMixin(models.Model):
             _airtable_unique_identifier = self.AIRTABLE_UNIQUE_IDENTIFIER
             value = getattr(self, _airtable_unique_identifier)
             airtable_column_name = self.AIRTABLE_UNIQUE_IDENTIFIER
-        records = self.airtable_client.search(airtable_column_name, value)
+        records = self.airtable_client.all(formula=match({airtable_column_name: value}))
         total_records = len(records)
         if total_records:
             # If more than 1 record was returned log a warning.
@@ -264,7 +265,7 @@ class AirtableMixin(models.Model):
 
     def _create_record(self, fields):
         try:
-            record = self.airtable_client.insert(fields)
+            record = self.airtable_client.create(fields)
         except HTTPError as e:
             error = self.parse_request_error(e.args[0])
             message = (
