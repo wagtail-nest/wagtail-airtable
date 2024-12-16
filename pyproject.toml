@@ -1,6 +1,6 @@
 [project]
 name = "wagtail-airtable"
-version = "0.7.0"
+version = "1.0.0"
 description = "Sync data between Wagtail and Airtable"
 authors = [{name = "Kalob Taulien", email = "kalob.taulien@torchbox.com"}]
 maintainers = [

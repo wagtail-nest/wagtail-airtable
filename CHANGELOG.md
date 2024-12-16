@@ -1,8 +1,9 @@
 # Changelog
 
-## 1.0.0 (xx.xx.xxxx)
+## 1.0.0 (16.12.2024)
 
 * **Breaking**: Callables passed as `PARENT_PAGE_ID` no longer accept an `instance` argument (Matt Westcott)
+* Upgrade to pyairtable 2.x (Matt Westcott)
 * Add support for Wagtail 6.1 - 6.3 (Matt Westcott)
 * Update testing to include Python 3.13, Django 5.1 (Matt Westcott)
 * Rewrite importer module for robustness and better performance (Jake Howard, Matt Westcott)
