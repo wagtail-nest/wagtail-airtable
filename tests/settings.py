@@ -130,7 +130,7 @@ AIRTABLE_IMPORT_SETTINGS = {
     'tests.SimplePage': {
         'AIRTABLE_BASE_KEY': 'xxx',
         'AIRTABLE_TABLE_NAME': 'xxx',
-        'AIRTABLE_UNIQUE_IDENTIFIER': 'slug',
+        'AIRTABLE_UNIQUE_IDENTIFIER': {'Page Slug': 'slug'},
         'AIRTABLE_SERIALIZER': 'tests.serializers.SimplePageSerializer',
         'PARENT_PAGE_ID': 'tests.models.get_import_parent_page',
     },

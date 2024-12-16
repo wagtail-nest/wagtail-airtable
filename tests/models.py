@@ -18,7 +18,7 @@ class SimplePage(AirtableMixin, Page):
     def map_import_fields(cls):
         mappings = {
             "title": "title",
-            "slug": "slug",
+            "Page Slug": "slug",
             "intro": "intro",
         }
         return mappings
@@ -26,7 +26,7 @@ class SimplePage(AirtableMixin, Page):
     def get_export_fields(self):
         return {
             "title": self.title,
-            "slug": self.slug,
+            "Page Slug": self.slug,
             "intro": self.intro,
         }
 
